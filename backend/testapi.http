@@ -1,0 +1,83 @@
+@base = http://localhost:8000/api
+@token = 2|1OOwyhJFZN8OVzJpMAHMk0fywguX3IaaOumayzHuee4eb46d
+
+### 0. Is the API alive?
+GET {{base}}/hello
+Accept: application/json
+
+### 1. Register
+POST {{base}}/register
+Accept: application/json
+Content-Type: application/json
+
+{
+  "name": "Test User",
+  "email": "test@example.com",
+  "password": "password123"
+}
+
+### 2. Login (copy the token from the response)
+POST {{base}}/login
+Accept: application/json
+Content-Type: application/json
+
+{
+  "email": "test@example.com",
+  "password": "password123"
+}
+
+### 3. Create a board
+POST {{base}}/boards
+Accept: application/json
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "name": "My first board"
+}
+
+### 4. Add a story (goes to backlog by default)
+POST {{base}}/boards/1/stories
+Accept: application/json
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "title": "Design login page"
+}
+
+### 5. Add a story directly to todo
+POST {{base}}/boards/1/stories
+Accept: application/json
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "title": "Set up database",
+  "status": "todo"
+}
+
+### 6. Move story 1 to in_progress
+PATCH {{base}}/stories/1
+Accept: application/json
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "status": "in_progress"
+}
+
+### 7. Get the board with its stories
+GET {{base}}/boards/1
+Accept: application/json
+Authorization: Bearer {{token}}
+
+### 8. Invalid status (should fail with 422)
+PATCH {{base}}/stories/1
+Accept: application/json
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "status": "banana"
+}
