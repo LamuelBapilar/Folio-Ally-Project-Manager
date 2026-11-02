@@ -17,6 +17,15 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->api(append: [SecurityHeaders::class]);
+
+        // Spaces and tabs inside a rich-text note are part of the text, so Laravel
+        // must not trim them, or turn a piece that is only a space into null.
+        $middleware->trimStrings(except: [
+            fn (Request $request) => $request->is('api/notes/*'),
+        ]);
+        $middleware->convertEmptyStringsToNull(except: [
+            fn (Request $request) => $request->is('api/notes/*'),
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         // no more "No query results for model [App\Models\Board] 3" in the API

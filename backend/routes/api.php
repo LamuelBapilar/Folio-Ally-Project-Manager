@@ -6,6 +6,8 @@ use App\Http\Controllers\BoardMemberController;
 use App\Http\Controllers\InvitationController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\StoryController;
+use App\Http\Controllers\NoteController;
+use App\Http\Controllers\NoteFolderController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -47,4 +49,16 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
     // notifications
     Route::get('/notifications', [NotificationController::class, 'index'])->middleware('throttle:notifications');
     Route::post('/notifications/read', [NotificationController::class, 'read']);
+
+    // notes
+    Route::get('/note-folders', [NoteFolderController::class, 'index']);
+    Route::post('/note-folders', [NoteFolderController::class, 'store'])->middleware('throttle:creates');
+    Route::patch('/note-folders/{folder}', [NoteFolderController::class, 'update']);
+    Route::delete('/note-folders/{folder}', [NoteFolderController::class, 'destroy']);
+
+    Route::get('/notes', [NoteController::class, 'index']);
+    Route::post('/notes', [NoteController::class, 'store'])->middleware('throttle:note-creates');
+    Route::get('/notes/{note}', [NoteController::class, 'show']);
+    Route::patch('/notes/{note}', [NoteController::class, 'update']);
+    Route::delete('/notes/{note}', [NoteController::class, 'destroy']);
 });

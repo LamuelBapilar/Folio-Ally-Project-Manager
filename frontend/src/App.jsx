@@ -48,6 +48,12 @@ export default function App() {
         element={user ? <Home user={user} onLogout={handleLogout} /> : <Landing />}
       />
       <Route
+        path="/notespage"
+        element={
+          user ? <Home user={user} onLogout={handleLogout} /> : <Navigate to="/login" replace />
+        }
+      />
+      <Route
         path="/login"
         element={user ? <Navigate to="/" replace /> : <Login onLogin={setUser} />}
       />

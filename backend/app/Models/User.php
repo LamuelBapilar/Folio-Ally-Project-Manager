@@ -59,4 +59,14 @@ class User extends Authenticatable
     {
         return $this->hasMany(UserNotification::class);
     }
+
+    public function noteFolders(): HasMany
+    {
+        return $this->hasMany(NoteFolder::class);
+    }
+
+    public function notes(): HasMany
+    {
+        return $this->hasMany(Note::class);
+    }
 }

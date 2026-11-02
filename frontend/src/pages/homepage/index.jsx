@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from "react";
-import { CircleAlert, Database, Kanban, LogOut } from "lucide-react";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
+import { CircleAlert, Kanban, LogOut, StickyNote } from "lucide-react";
 import { createBoard, deleteBoard, getBoard, getBoards, updateBoard } from "../../API/table";
 import Board from "./components/Board";
 import BoardMenu from "./components/BoardMenu";
@@ -10,9 +11,15 @@ import InvitationModal from "./components/InvitationModal";
 import NotificationBell from "./components/NotificationBell";
 import RenameBoardModal from "./components/RenameBoardModal";
 
+// the notes editor is only downloaded when you open Notes
+const NotesPage = lazy(() => import("../notespage"));
+
 const FADE_OUT_MS = 150;
 
 export default function Home({ user, onLogout }) {
+  const navigate = useNavigate();
+  const inNotes = useLocation().pathname === "/notespage";
+
   const [boards, setBoards] = useState([]);
   const [board, setBoard] = useState(null);
   const [error, setError] = useState("");
@@ -120,14 +127,33 @@ export default function Home({ user, onLogout }) {
 
   const isOwner = board && board.user_id === user.id;
 
+  const navButton = (active) =>
+    `rounded-lg p-1.5 transition-colors focus-visible:outline-2 focus-visible:outline-brand ${
+      active ? "bg-brand text-white" : "text-slate-500 hover:bg-brand-soft"
+    }`;
+
   return (
     <div className="flex h-dvh bg-canvas text-slate-900">
       <aside className="flex w-14 shrink-0 flex-col items-center gap-2.5 border-r border-brand-soft bg-white py-3">
-        <button aria-label="Boards" className="rounded-lg bg-brand p-1.5 text-white">
+        <button
+          type="button"
+          aria-label="Boards"
+          title="Boards"
+          aria-current={!inNotes ? "page" : undefined}
+          onClick={() => navigate("/")}
+          className={navButton(!inNotes)}
+        >
           <Kanban size={18} />
         </button>
-        <button aria-label="Data" className="rounded-lg p-1.5 text-slate-500 hover:bg-brand-soft">
-          <Database size={18} />
+        <button
+          type="button"
+          aria-label="Notes"
+          title="Notes"
+          aria-current={inNotes ? "page" : undefined}
+          onClick={() => navigate("/notespage")}
+          className={navButton(inNotes)}
+        >
+          <StickyNote size={18} />
         </button>
       </aside>
 
@@ -137,24 +163,32 @@ export default function Home({ user, onLogout }) {
             <span className="shrink-0 text-2xl font-medium text-brand">Folio</span>
             <span className="h-6 w-px shrink-0 bg-brand-muted/60" />
 
-            {board && (
-              <div className="flex min-w-0 items-center gap-1">
-                <BoardSwitcher boards={boards} current={board} onSelect={openBoard} />
-                {isOwner && (
-                  <BoardMenu
-                    onRename={() => setBoardModal("rename")}
-                    onDelete={() => setBoardModal("delete")}
-                  />
-                )}
-              </div>
+            {inNotes ? (
+              <span className="text-base font-bold">Notes</span>
+            ) : (
+              board && (
+                <div className="flex min-w-0 items-center gap-1">
+                  <BoardSwitcher boards={boards} current={board} onSelect={openBoard} />
+                  {isOwner && (
+                    <BoardMenu
+                      onRename={() => setBoardModal("rename")}
+                      onDelete={() => setBoardModal("delete")}
+                    />
+                  )}
+                </div>
+              )
             )}
           </div>
 
           <div className="flex shrink-0 items-center gap-3 text-brand">
             <CircleAlert size={18} />
             <NotificationBell
-              currentBoardId={board?.id}
-              onOpenBoard={openBoard}
+              // on the Notes page every board notification must switch pages, so no board counts as "current"
+              currentBoardId={inNotes ? null : board?.id}
+              onOpenBoard={(id) => {
+                navigate("/");
+                return openBoard(id);
+              }}
               onReview={setReviewingId}
             />
             <span
@@ -188,22 +222,32 @@ export default function Home({ user, onLogout }) {
             </p>
           )}
 
-          {!board && !error && <p className="text-sm text-slate-500">Loading board...</p>}
+          {inNotes ? (
+            <Suspense fallback={<p className="text-sm text-slate-500">Loading notes...</p>}>
+              <NotesPage />
+            </Suspense>
+          ) : (
+            <>
+              {!board && !error && (
+                <p className="text-sm text-slate-500">Loading board...</p>
+              )}
 
-          {board && (
-            <div
-              className={`min-h-0 flex-1 transition-opacity duration-150 motion-reduce:transition-none ${
-                leaving ? "opacity-0" : ""
-              }`}
-            >
-              <Board
-                key={board.id}
-                board={board}
-                user={user}
-                onNewBoard={() => setBoardModal("create")}
-                onLeave={() => refreshBoards()}
-              />
-            </div>
+              {board && (
+                <div
+                  className={`min-h-0 flex-1 transition-opacity duration-150 motion-reduce:transition-none ${
+                    leaving ? "opacity-0" : ""
+                  }`}
+                >
+                  <Board
+                    key={board.id}
+                    board={board}
+                    user={user}
+                    onNewBoard={() => setBoardModal("create")}
+                    onLeave={() => refreshBoards()}
+                  />
+                </div>
+              )}
+            </>
           )}
         </main>
       </div>
@@ -212,7 +256,10 @@ export default function Home({ user, onLogout }) {
         <InvitationModal
           id={reviewingId}
           onClose={() => setReviewingId(null)}
-          onAccepted={(boardId) => refreshBoards(boardId)}
+          onAccepted={(boardId) => {
+            navigate("/");
+            refreshBoards(boardId);
+          }}
         />
       )}
 
