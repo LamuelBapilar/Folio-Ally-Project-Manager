@@ -4,11 +4,12 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Note extends Model
 {
     protected $fillable = [
-        'user_id', 'folder_id', 'title', 'content', 'content_text', 'is_pinned',
+        'user_id', 'folder_id', 'title', 'content', 'content_text', 'is_pinned', 'shared_from',
     ];
 
     // the plain-text copy is only for searching: it never goes out in responses
@@ -27,5 +28,10 @@ class Note extends Model
     public function folder(): BelongsTo
     {
         return $this->belongsTo(NoteFolder::class, 'folder_id');
+    }
+
+    public function shares(): HasMany
+    {
+        return $this->hasMany(NoteShare::class);
     }
 }

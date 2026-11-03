@@ -3,6 +3,7 @@ import {
   createFolder,
   createNote,
   deleteFolder,
+  deleteNote,
   getFolders,
   getNote,
   getNotes,
@@ -10,16 +11,14 @@ import {
   updateNote,
 } from "../../API/notes";
 import { useDebounced } from "../../hooks/useDebounced";
-import {
-  DEFAULT_NOTE_FILTERS,
-  isFiltering,
-  rangeParams,
-} from "../../utils/noteFilters";
+import { DEFAULT_NOTE_FILTERS, rangeParams } from "../../utils/noteFilters";
+import { downloadTextFile, fileNameFor, noteToText } from "../../utils/noteText";
 import ConfirmModal from "../homepage/components/ConfirmModal";
 import FolderList from "./components/FolderList";
 import FolderModal from "./components/FolderModal";
 import NoteEditor from "./components/NoteEditor";
 import NoteList from "./components/NoteList";
+import ShareNoteModal from "./components/ShareNoteModal";
 
 export default function NotesPage() {
   const [folders, setFolders] = useState([]);
@@ -37,6 +36,8 @@ export default function NotesPage() {
   const [busy, setBusy] = useState(false); // opening or creating a note
   const [folderModal, setFolderModal] = useState(null); // null, {} to create, { folder } to rename
   const [confirmFolder, setConfirmFolder] = useState(null);
+  const [confirmNote, setConfirmNote] = useState(null); // the note waiting to be deleted
+  const [sharing, setSharing] = useState(null); // the note being shared: { id, title }
 
   const debouncedQuery = useDebounced(query.trim(), 300);
   const requestId = useRef(0);
@@ -85,6 +86,11 @@ export default function NotesPage() {
     }
   }, []);
 
+  const refresh = useCallback(
+    () => Promise.all([loadNotes(), loadFolders()]),
+    [loadNotes, loadFolders]
+  );
+
   useEffect(() => {
     loadNotes();
   }, [loadNotes]);
@@ -93,7 +99,11 @@ export default function NotesPage() {
     loadFolders();
   }, [loadFolders]);
 
-  const refresh = () => Promise.all([loadNotes(), loadFolders()]);
+  // a shared note was just saved to this account
+  useEffect(() => {
+    window.addEventListener("notes-changed", refresh);
+    return () => window.removeEventListener("notes-changed", refresh);
+  }, [refresh]);
 
   const currentFolder = typeof view === "number" ? folders.find((f) => f.id === view) : null;
   const title =
@@ -159,6 +169,30 @@ export default function NotesPage() {
 
     // pinned notes move to the top
     loadNotes();
+  }
+
+  // the list only holds a preview, so the whole note is fetched first
+  async function downloadNote(note) {
+    setError("");
+
+    try {
+      const full = await getNote(note.id);
+      downloadTextFile(fileNameFor(full.title), noteToText(full.title, full.content));
+    } catch (err) {
+      setError(err.status === 404 ? "That note no longer exists." : err.message);
+    }
+  }
+
+  // the confirmation window shows any error, so there is no try/catch here
+  async function removeNote() {
+    try {
+      await deleteNote(confirmNote.id);
+    } catch (err) {
+      // already gone (deleted somewhere else): just refresh the list
+      if (err.status !== 404) throw err;
+    }
+
+    await refresh();
   }
 
   // the folder windows catch these errors and show them, so there is no try/catch here
@@ -229,6 +263,7 @@ export default function NotesPage() {
             backLabel={title}
             registerFlush={registerFlush}
             onBack={closeNote}
+            onShare={setSharing}
             onDeleted={() => {
               setOpen(null);
               refresh();
@@ -249,6 +284,9 @@ export default function NotesPage() {
             onOpen={openNote}
             onNew={newNote}
             onPin={togglePin}
+            onShare={(note) => setSharing({ id: note.id, title: note.title })}
+            onDownload={downloadNote}
+            onDelete={setConfirmNote}
           />
         )}
       </section>
@@ -275,6 +313,23 @@ export default function NotesPage() {
           Unfiled.
         </ConfirmModal>
       )}
+
+      {confirmNote && (
+        <ConfirmModal
+          danger
+          title="Delete this note?"
+          confirmLabel="Delete note"
+          busyLabel="Deleting..."
+          onConfirm={removeNote}
+          onClose={() => setConfirmNote(null)}
+        >
+          <span className="font-semibold">{confirmNote.title || "Untitled"}</span> will be
+          permanently deleted, and anything you shared that hasn't been answered is
+          cancelled. This can't be undone.
+        </ConfirmModal>
+      )}
+
+      {sharing && <ShareNoteModal note={sharing} onClose={() => setSharing(null)} />}
     </div>
   );
 }

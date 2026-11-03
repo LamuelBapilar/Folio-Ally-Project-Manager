@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Enums\StoryStatus;
 use App\Models\BoardInvitation;
+use App\Models\NoteShare;
 use App\Models\Story;
 use App\Models\User;
 use App\Models\UserNotification;
@@ -17,6 +18,7 @@ class Notifier
     public static function sync(User $user): void
     {
         self::invitations($user);
+        self::noteShares($user);
         self::deadlines($user);
     }
 
@@ -45,6 +47,77 @@ class Notifier
             $user,
             $invitations->map(fn (BoardInvitation $i) => self::invitationRow($i))
         );
+    }
+
+    // notes shared with this person's email that nobody has answered yet
+    // (this is also how someone who registers after being sent one gets theirs)
+    public static function noteShares(User $user): void
+    {
+        $shares = NoteShare::with('sender:id,name')
+            ->forRecipient($user)
+            ->pending()
+            ->get();
+
+        self::recordMissing(
+            $user,
+            $shares->map(fn (NoteShare $share) => self::shareRow($share))
+        );
+    }
+
+    // right after a note is shared, so the person sees it straight away
+    public static function noteShare(NoteShare $share, User $user): void
+    {
+        try {
+            self::recordMissing($user, collect([self::shareRow($share)]));
+        } catch (Throwable $e) {
+            // the share is saved, and the next sync records this notification
+            report($e);
+        }
+    }
+
+    // tells the sender that their note was saved, or turned down
+    public static function noteShareAnswered(NoteShare $share, User $by, bool $accepted): void
+    {
+        try {
+            $who = Str::limit($by->name, 60);
+            $title = Str::limit($share->title !== '' ? $share->title : 'Untitled', 120);
+
+            UserNotification::create([
+                'user_id' => $share->sender_id,
+                'type' => $accepted ? 'note_share_accepted' : 'note_share_declined',
+                'title' => $accepted
+                    ? "{$who} saved your note \"{$title}\""
+                    : "{$who} declined your note \"{$title}\"",
+                'body' => $accepted ? 'They now have their own copy' : 'Nothing was saved',
+                'dedupe_key' => 'share-answer:'.Str::uuid(),
+            ]);
+        } catch (Throwable $e) {
+            report($e);
+        }
+    }
+
+    // tells whoever invited a person that they joined, or said no
+    public static function invitationAnswered(BoardInvitation $invitation, User $by, bool $accepted): void
+    {
+        try {
+            $invitation->loadMissing('board:id,name');
+
+            $who = Str::limit($by->name, 60);
+            $board = Str::limit($invitation->board->name, 100);
+
+            UserNotification::create([
+                'user_id' => $invitation->invited_by,
+                'type' => $accepted ? 'invitation_accepted' : 'invitation_declined',
+                'title' => $accepted ? "{$who} joined {$board}" : "{$who} declined to join {$board}",
+                'body' => $accepted
+                    ? 'They can now add and edit stories'
+                    : 'You can invite them again from Share',
+                'board_id' => $invitation->board_id,
+                'dedupe_key' => 'invite-answer:'.Str::uuid(),
+            ]);
+        } catch (Throwable $e) {
+            report($e);
+        }
     }
 
     // stories due tomorrow, due today, or overdue, on every board this person can open
@@ -128,6 +201,21 @@ class Notifier
             'board_id' => $invitation->board_id,
             'invitation_id' => $invitation->id,
             'dedupe_key' => "invite:{$invitation->id}",
+        ];
+    }
+
+    private static function shareRow(NoteShare $share): array
+    {
+        $share->loadMissing('sender:id,name');
+
+        $sender = Str::limit($share->sender->name, 60);
+
+        return [
+            'type' => 'note_share',
+            'title' => "{$sender} shared a note with you",
+            'body' => Str::limit($share->title !== '' ? $share->title : 'Untitled', 120),
+            'share_id' => $share->id,
+            'dedupe_key' => "share:{$share->id}",
         ];
     }
 

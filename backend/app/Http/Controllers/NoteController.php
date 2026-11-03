@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\Note;
+use App\Models\NoteShare;
+use App\Support\NoteDocument;
 use App\Support\NoteText;
 use Closure;
 use Illuminate\Http\Request;
@@ -14,9 +16,9 @@ use Illuminate\Validation\ValidationException;
 class NoteController extends Controller
 {
     // the limits that keep your database small: change them here
-    private const MAX_NOTES = 500;
+    public const MAX_NOTES = 500;
+    public const MAX_TEXT_CHARS = 60_000;
     private const MAX_CONTENT_BYTES = 200_000;
-    private const MAX_TEXT_CHARS = 60_000;
     private const PAGE = 100;
 
     public function index(Request $request)
@@ -34,7 +36,7 @@ class NoteController extends Controller
         $query = $request->user()->notes()
             ->select([
                 'notes.id', 'notes.folder_id', 'notes.title', 'notes.is_pinned',
-                'notes.created_at', 'notes.updated_at',
+                'notes.shared_from', 'notes.created_at', 'notes.updated_at',
                 DB::raw('LEFT(notes.content_text, 160) as preview'),
             ])
             ->with('folder:id,name');
@@ -148,9 +150,12 @@ class NoteController extends Controller
         }
 
         if (array_key_exists('content', $data)) {
-            $note->content = $data['content'];
-            $note->content_text = $data['content']
-                ? mb_substr(NoteText::fromDocument($data['content']), 0, self::MAX_TEXT_CHARS)
+            // rebuilt from the allow-list, so nothing unsafe is ever stored
+            $document = NoteDocument::clean($data['content']);
+
+            $note->content = $document;
+            $note->content_text = $document
+                ? mb_substr(NoteText::fromDocument($document), 0, self::MAX_TEXT_CHARS)
                 : null;
             $edited = true;
         }
@@ -175,7 +180,14 @@ class NoteController extends Controller
 
     public function destroy(Request $request, string $id)
     {
-        $request->user()->notes()->findOrFail($id)->delete();
+        $note = $request->user()->notes()->findOrFail($id);
+
+        DB::transaction(function () use ($note) {
+            // a note that is gone can no longer be accepted by anyone
+            NoteShare::where('note_id', $note->id)->where('status', 'pending')->delete();
+
+            $note->delete();
+        });
 
         return response()->noContent();
     }
@@ -208,6 +220,7 @@ class NoteController extends Controller
             'folder' => $note->folder ? ['id' => $note->folder->id, 'name' => $note->folder->name] : null,
             'title' => $note->title,
             'is_pinned' => $note->is_pinned,
+            'shared_from' => $note->shared_from,
             'preview' => Str::limit((string) $note->content_text, 160),
             'created_at' => $note->created_at,
             'updated_at' => $note->updated_at,

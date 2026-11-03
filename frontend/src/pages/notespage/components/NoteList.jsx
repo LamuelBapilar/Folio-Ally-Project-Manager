@@ -7,6 +7,7 @@ import {
 } from "../../../utils/noteFilters";
 import { timeAgo } from "../../../utils/time";
 import NoteFilterMenu from "./NoteFilterMenu";
+import NoteMenu from "./NoteMenu";
 
 function Chip({ label, onRemove }) {
   return (
@@ -38,6 +39,9 @@ export default function NoteList({
   onOpen,
   onNew,
   onPin,
+  onShare,
+  onDownload,
+  onDelete,
 }) {
   const filterActive = isFiltering(filters);
   const narrowed = filterActive || query.trim().length > 0;
@@ -172,7 +176,7 @@ export default function NoteList({
                 <button
                   type="button"
                   onClick={() => onOpen(note.id)}
-                  className="block w-full rounded-xl border border-transparent px-3.5 py-3 pr-10 text-left transition-colors hover:border-brand-muted/50 hover:bg-brand-soft/40 focus-visible:outline-2 focus-visible:outline-brand"
+                  className="block w-full rounded-xl border border-transparent px-3.5 py-3 pr-16 text-left transition-colors hover:border-brand-muted/50 hover:bg-brand-soft/40 focus-visible:outline-2 focus-visible:outline-brand"
                 >
                   <span className="block truncate text-[13px] font-semibold">
                     {note.title || "Untitled"}
@@ -187,24 +191,38 @@ export default function NoteList({
                         <span className="truncate">{note.folder.name}</span>
                       </span>
                     )}
+                    {note.shared_from && (
+                      <span className="max-w-32 truncate rounded bg-slate-100 px-1.5 py-0.5 font-semibold text-slate-600">
+                        Shared by {note.shared_from}
+                      </span>
+                    )}
                     <span>Edited {timeAgo(note.updated_at)}</span>
                   </span>
                 </button>
 
-                <button
-                  type="button"
-                  onClick={() => onPin(note)}
-                  aria-pressed={note.is_pinned}
-                  aria-label={note.is_pinned ? "Unpin note" : "Pin note"}
-                  title={note.is_pinned ? "Unpin note" : "Pin note"}
-                  className={`absolute right-2.5 top-2.5 grid h-6 w-6 place-items-center rounded-md transition-opacity hover:bg-white hover:text-brand focus-visible:opacity-100 ${
-                    note.is_pinned
-                      ? "text-brand"
-                      : "text-slate-400 opacity-0 group-hover:opacity-100"
-                  }`}
-                >
-                  <Pin size={13} fill={note.is_pinned ? "currentColor" : "none"} />
-                </button>
+                <div className="absolute right-2 top-2.5 flex items-center gap-0.5">
+                  <button
+                    type="button"
+                    onClick={() => onPin(note)}
+                    aria-pressed={note.is_pinned}
+                    aria-label={note.is_pinned ? "Unpin note" : "Pin note"}
+                    title={note.is_pinned ? "Unpin note" : "Pin note"}
+                    className={`grid h-6 w-6 place-items-center rounded-md transition-opacity hover:bg-white hover:text-brand focus-visible:opacity-100 focus-visible:outline-2 focus-visible:outline-brand ${
+                      note.is_pinned
+                        ? "text-brand"
+                        : "text-slate-400 opacity-0 group-focus-within:opacity-100 group-hover:opacity-100 [@media(hover:none)]:opacity-100"
+                    }`}
+                  >
+                    <Pin size={13} fill={note.is_pinned ? "currentColor" : "none"} />
+                  </button>
+
+                  <NoteMenu
+                    onOpen={() => onOpen(note.id)}
+                    onShare={() => onShare(note)}
+                    onDownload={() => onDownload(note)}
+                    onDelete={() => onDelete(note)}
+                  />
+                </div>
               </li>
             ))}
           </ul>

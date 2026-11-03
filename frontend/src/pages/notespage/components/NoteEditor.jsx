@@ -8,15 +8,18 @@ import {
   ArrowLeft,
   Check,
   ChevronDown,
+  Download,
   Folder,
   Inbox,
   Loader2,
   Pin,
+  Share2,
   Trash2,
   TriangleAlert,
 } from "lucide-react";
 import { deleteNote, updateNote } from "../../../API/notes";
 import { prepareDocument } from "../../../utils/noteDocument";
+import { downloadTextFile, fileNameFor, noteToText } from "../../../utils/noteText";
 import { timeAgo } from "../../../utils/time";
 import ConfirmModal from "../../homepage/components/ConfirmModal";
 import EditorToolbar from "./EditorToolbar";
@@ -40,6 +43,9 @@ const extensions = [
 const schema = getSchema(extensions);
 
 const countWords = (text) => (text.trim() ? text.trim().split(/\s+/).length : 0);
+
+const headerButton =
+  "grid h-7 w-7 place-items-center rounded-md transition-colors hover:bg-brand-soft focus-visible:outline-2 focus-visible:outline-brand";
 
 function SaveStatus({ status, onRetry }) {
   return (
@@ -78,6 +84,7 @@ export default function NoteEditor({
   backLabel,
   onBack,
   onDeleted,
+  onShare,
   registerFlush,
 }) {
   // checked once, when the note is opened
@@ -241,6 +248,24 @@ export default function NoteEditor({
     }
   }
 
+  // the shared copy is the SAVED note, so everything is saved first
+  async function share() {
+    setActionError("");
+
+    if ((await flush()) === false) {
+      setActionError("Your latest changes couldn't be saved yet. Fix that, then share.");
+      return;
+    }
+
+    onShare({ id: note.id, title: titleRef.current });
+  }
+
+  // downloads exactly what is on the screen, saved or not
+  function download() {
+    const name = titleRef.current;
+    downloadTextFile(fileNameFor(name), noteToText(name, editor.getJSON()));
+  }
+
   async function remove() {
     // nothing left to save for a note that is about to be deleted
     clearTimeout(timerRef.current);
@@ -304,8 +329,34 @@ export default function NoteEditor({
           )}
         </MenuButton>
 
-        <div className="ml-auto flex items-center gap-1.5">
+        {note.shared_from && (
+          <span className="max-w-40 truncate rounded bg-slate-100 px-2 py-1 text-[10px] font-semibold text-slate-600">
+            Shared by {note.shared_from}
+          </span>
+        )}
+
+        <div className="ml-auto flex items-center gap-1">
           <SaveStatus status={status} onRetry={flush} />
+
+          <button
+            type="button"
+            onClick={share}
+            aria-label="Share note"
+            title="Share note"
+            className={`${headerButton} text-slate-500 hover:text-brand`}
+          >
+            <Share2 size={14} />
+          </button>
+
+          <button
+            type="button"
+            onClick={download}
+            aria-label="Download as text"
+            title="Download as text"
+            className={`${headerButton} text-slate-500 hover:text-brand`}
+          >
+            <Download size={14} />
+          </button>
 
           <button
             type="button"
@@ -313,9 +364,7 @@ export default function NoteEditor({
             aria-pressed={meta.is_pinned}
             aria-label={meta.is_pinned ? "Unpin note" : "Pin note"}
             title={meta.is_pinned ? "Unpin note" : "Pin note"}
-            className={`grid h-7 w-7 place-items-center rounded-md transition-colors hover:bg-brand-soft focus-visible:outline-2 focus-visible:outline-brand ${
-              meta.is_pinned ? "text-brand" : "text-slate-500"
-            }`}
+            className={`${headerButton} ${meta.is_pinned ? "text-brand" : "text-slate-500"}`}
           >
             <Pin size={14} fill={meta.is_pinned ? "currentColor" : "none"} />
           </button>
@@ -408,7 +457,8 @@ export default function NoteEditor({
           onClose={() => setConfirmingDelete(false)}
         >
           <span className="font-semibold">{title.trim() || "Untitled"}</span> will be
-          permanently deleted. This can't be undone.
+          permanently deleted, and anything you shared that hasn't been answered is
+          cancelled. This can't be undone.
         </ConfirmModal>
       )}
     </div>

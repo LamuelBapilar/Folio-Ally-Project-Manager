@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Board;
+use App\Models\NoteShare;
 use App\Services\Notifier;
 use Illuminate\Http\Request;
 use Throwable;
@@ -13,6 +14,9 @@ class NotificationController extends Controller
     {
         $user = $request->user();
 
+        // shared notes nobody answered in time are closed before anything is listed
+        NoteShare::expireOld();
+
         try {
             Notifier::sync($user);
         } catch (Throwable $e) {
@@ -21,7 +25,7 @@ class NotificationController extends Controller
         }
 
         $notifications = $user->userNotifications()
-            ->with('invitation:id,status')
+            ->with(['invitation:id,status', 'share:id,status'])
             ->orderByDesc('id')
             ->limit(50)
             ->get();

@@ -47,5 +47,6 @@ class AppServiceProvider extends ServiceProvider
         RateLimiter::for('invites', fn (Request $request) => Limit::perHour(20)->by($who($request)));
         RateLimiter::for('notifications', fn (Request $request) => Limit::perMinute(60)->by($who($request)));
         RateLimiter::for('note-creates', fn (Request $request) => Limit::perHour(60)->by($who($request)));
+        RateLimiter::for('shares', fn (Request $request) => Limit::perHour(20)->by($who($request)));
     }
 }

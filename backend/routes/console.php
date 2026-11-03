@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\NoteShare;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
@@ -17,3 +18,8 @@ Schedule::call(fn () => PersonalAccessToken::whereNotNull('expires_at')
     ->delete())
     ->daily()
     ->name('prune-expired-tokens');
+
+// shared notes nobody answered in 30 days are closed, and their copy is thrown away
+Schedule::call(fn () => NoteShare::expireOld())
+    ->daily()
+    ->name('expire-note-shares');

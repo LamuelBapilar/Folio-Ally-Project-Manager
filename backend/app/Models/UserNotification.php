@@ -14,11 +14,13 @@ class UserNotification extends Model
         'story_due_today',
         'story_overdue',
         'story_assigned',
+        'invitation_accepted',
+        'invitation_declined',
     ];
 
     protected $fillable = [
         'user_id', 'type', 'title', 'body',
-        'board_id', 'story_id', 'invitation_id',
+        'board_id', 'story_id', 'invitation_id', 'share_id',
         'dedupe_key', 'read_at',
     ];
 
@@ -34,5 +36,10 @@ class UserNotification extends Model
     public function invitation(): BelongsTo
     {
         return $this->belongsTo(BoardInvitation::class);
+    }
+
+    public function share(): BelongsTo
+    {
+        return $this->belongsTo(NoteShare::class);
     }
 }

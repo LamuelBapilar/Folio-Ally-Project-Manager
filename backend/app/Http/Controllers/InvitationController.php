@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\BoardInvitation;
+use App\Services\Notifier;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -43,6 +44,9 @@ class InvitationController extends Controller
             $this->markNotificationRead($request, $invitation);
         });
 
+        // tell whoever invited them
+        Notifier::invitationAnswered($invitation, $request->user(), true);
+
         return ['board_id' => $invitation->board_id];
     }
 
@@ -54,6 +58,8 @@ class InvitationController extends Controller
             $invitation->update(['status' => 'declined']);
             $this->markNotificationRead($request, $invitation);
         });
+
+        Notifier::invitationAnswered($invitation, $request->user(), false);
 
         return response()->noContent();
     }

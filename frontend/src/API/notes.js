@@ -32,3 +32,21 @@ export const updateNote = (id, data) =>
   api(`/notes/${id}`, { method: "PATCH", body: data });
 
 export const deleteNote = (id) => api(`/notes/${id}`, { method: "DELETE" });
+
+// sharing a note (the sender)
+export const getNoteShares = (noteId) => api(`/notes/${noteId}/shares`);
+
+export const shareNote = (noteId, email) =>
+  api(`/notes/${noteId}/shares`, { method: "POST", body: { email } });
+
+export const cancelNoteShare = (noteId, shareId) =>
+  api(`/notes/${noteId}/shares/${shareId}`, { method: "DELETE" });
+
+// a note shared with me (the recipient)
+export const getReceivedShare = (id) => api(`/note-shares/${id}`);
+
+export const acceptNoteShare = (id, folderId) =>
+  api(`/note-shares/${id}/accept`, { method: "POST", body: { folder_id: folderId } });
+
+export const declineNoteShare = (id) =>
+  api(`/note-shares/${id}/decline`, { method: "POST" });

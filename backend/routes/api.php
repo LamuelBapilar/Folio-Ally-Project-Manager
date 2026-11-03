@@ -8,6 +8,8 @@ use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\StoryController;
 use App\Http\Controllers\NoteController;
 use App\Http\Controllers\NoteFolderController;
+use App\Http\Controllers\NoteShareController;
+use App\Http\Controllers\ReceivedShareController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -61,4 +63,14 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
     Route::get('/notes/{note}', [NoteController::class, 'show']);
     Route::patch('/notes/{note}', [NoteController::class, 'update']);
     Route::delete('/notes/{note}', [NoteController::class, 'destroy']);
+
+    // sharing a note (the sender)
+    Route::get('/notes/{note}/shares', [NoteShareController::class, 'index']);
+    Route::post('/notes/{note}/shares', [NoteShareController::class, 'store'])->middleware('throttle:shares');
+    Route::delete('/notes/{note}/shares/{share}', [NoteShareController::class, 'destroy']);
+
+    // notes shared with me (the recipient)
+    Route::get('/note-shares/{share}', [ReceivedShareController::class, 'show']);
+    Route::post('/note-shares/{share}/accept', [ReceivedShareController::class, 'accept']);
+    Route::post('/note-shares/{share}/decline', [ReceivedShareController::class, 'decline']);
 });

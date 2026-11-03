@@ -3,30 +3,48 @@ import {
   Bell,
   CalendarClock,
   Clock,
+  FileCheck,
+  FileX,
+  Share2,
   TriangleAlert,
   UserCheck,
   UserPlus,
+  UserX,
 } from "lucide-react";
 import { getNotifications, markNotificationsRead } from "../../../API/notification";
 import { timeAgo } from "../../../utils/time";
 
 const POLL_MS = 60 * 1000; // check again every minute while the tab is open
 
+// kind: "invite" and "share" need an answer, "board" opens a board, "info" is only read
 const TYPES = {
-  board_invitation: { icon: UserPlus, tone: "bg-brand-soft text-brand" },
-  story_due_soon: { icon: Clock, tone: "bg-medium/20 text-medium" },
-  story_due_today: { icon: CalendarClock, tone: "bg-high/15 text-high" },
-  story_overdue: { icon: TriangleAlert, tone: "bg-red-100 text-red-600" },
-  story_assigned: { icon: UserCheck, tone: "bg-low/15 text-low" },
+  board_invitation: { icon: UserPlus, tone: "bg-brand-soft text-brand", kind: "invite" },
+  note_share: { icon: Share2, tone: "bg-brand-soft text-brand", kind: "share" },
+  invitation_accepted: { icon: UserCheck, tone: "bg-low/15 text-low", kind: "board" },
+  invitation_declined: { icon: UserX, tone: "bg-slate-100 text-slate-500", kind: "board" },
+  note_share_accepted: { icon: FileCheck, tone: "bg-low/15 text-low", kind: "info" },
+  note_share_declined: { icon: FileX, tone: "bg-slate-100 text-slate-500", kind: "info" },
+  story_due_soon: { icon: Clock, tone: "bg-medium/20 text-medium", kind: "board" },
+  story_due_today: { icon: CalendarClock, tone: "bg-high/15 text-high", kind: "board" },
+  story_overdue: { icon: TriangleAlert, tone: "bg-red-100 text-red-600", kind: "board" },
+  story_assigned: { icon: UserCheck, tone: "bg-low/15 text-low", kind: "board" },
 };
+
+const FALLBACK = { icon: Bell, tone: "bg-slate-100 text-slate-500", kind: "info" };
 
 const ANSWERED = {
   accepted: "Accepted",
   declined: "Declined",
   cancelled: "Cancelled",
+  expired: "Expired",
 };
 
-export default function NotificationBell({ currentBoardId, onOpenBoard, onReview }) {
+export default function NotificationBell({
+  currentBoardId,
+  onOpenBoard,
+  onReview,
+  onReviewShare,
+}) {
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState(null); // null = not loaded yet
   const [unread, setUnread] = useState(0);
@@ -99,17 +117,30 @@ export default function NotificationBell({ currentBoardId, onOpenBoard, onReview
     }
   }
 
+  // the state of the thing an invitation or a shared note points at
+  function answerOf(n, kind) {
+    return (kind === "invite" ? n.invitation?.status : n.share?.status) ?? "cancelled";
+  }
+
   function openItem(n) {
-    if (n.type === "board_invitation") {
-      // only a pending invitation can still be answered
-      if (n.invitation?.status === "pending") {
+    const { kind } = TYPES[n.type] ?? FALLBACK;
+
+    if (kind === "invite" || kind === "share") {
+      // only one that is still waiting can be answered; anything else is just marked as read
+      if (answerOf(n, kind) === "pending") {
         setOpen(false);
-        onReview(n.invitation.id);
+
+        if (kind === "invite") onReview(n.invitation.id);
+        else onReviewShare(n.share.id);
+      } else if (!n.read_at) {
+        markRead([n.id]);
       }
       return;
     }
 
     if (!n.read_at) markRead([n.id]);
+
+    if (kind === "info") return;
 
     // this person was removed from the board, so there is nowhere to go
     if (!n.can_open) return;
@@ -160,33 +191,32 @@ export default function NotificationBell({ currentBoardId, onOpenBoard, onReview
 
           {!error && items !== null && list.length === 0 && (
             <p className="px-3 py-4 text-xs text-slate-500">
-              You're all caught up. Invitations and deadlines will show up here.
+              You're all caught up. Invitations, shared notes, and deadlines will show up here.
             </p>
           )}
 
           {list.length > 0 && (
             <ul className="max-h-80 overflow-y-auto p-1">
               {list.map((n) => {
-                const type = TYPES[n.type] ?? TYPES.story_due_soon;
-                const Icon = type.icon;
+                const meta = TYPES[n.type] ?? FALLBACK;
+                const Icon = meta.icon;
                 const isRead = !!n.read_at;
-                const isInvite = n.type === "board_invitation";
-                const noAccess = !isInvite && n.can_open === false;
-                // an invitation row gets deleted when the owner cancels it
-                const status = n.invitation?.status ?? "cancelled";
+                const needsAnswer = meta.kind === "invite" || meta.kind === "share";
+                const answer = needsAnswer ? answerOf(n, meta.kind) : null;
+                const waiting = answer === "pending";
+                const noAccess = meta.kind === "board" && n.can_open === false;
 
                 return (
                   <li key={n.id}>
                     <button
                       type="button"
                       onClick={() => openItem(n)}
-                      disabled={isInvite && status !== "pending"}
-                      className={`flex w-full items-start gap-2.5 rounded-lg px-2.5 py-2 text-left transition-colors hover:bg-brand-soft disabled:cursor-default disabled:hover:bg-transparent ${
+                      className={`flex w-full items-start gap-2.5 rounded-lg px-2.5 py-2 text-left transition-colors hover:bg-brand-soft ${
                         isRead ? "" : "bg-brand-soft/60"
-                      } ${noAccess ? "cursor-default" : ""}`}
+                      } ${(needsAnswer && !waiting) || noAccess || meta.kind === "info" ? "cursor-default" : ""}`}
                     >
                       <span
-                        className={`grid h-7 w-7 shrink-0 place-items-center rounded-full ${type.tone} ${
+                        className={`grid h-7 w-7 shrink-0 place-items-center rounded-full ${meta.tone} ${
                           isRead || noAccess ? "opacity-60" : ""
                         }`}
                       >
@@ -207,14 +237,14 @@ export default function NotificationBell({ currentBoardId, onOpenBoard, onReview
                         </span>
                       </span>
 
-                      {isInvite ? (
-                        status === "pending" ? (
+                      {needsAnswer ? (
+                        waiting ? (
                           <span className="shrink-0 self-center rounded-md bg-brand px-2 py-1 text-[10px] font-semibold text-white">
                             Review
                           </span>
                         ) : (
                           <span className="shrink-0 self-center text-[10px] font-semibold text-slate-500">
-                            {ANSWERED[status]}
+                            {ANSWERED[answer] ?? answer}
                           </span>
                         )
                       ) : noAccess ? (

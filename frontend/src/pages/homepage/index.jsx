@@ -9,6 +9,7 @@ import CreateBoardModal from "./components/CreateBoardModal";
 import DeleteBoardModal from "./components/DeleteBoardModal";
 import InvitationModal from "./components/InvitationModal";
 import NotificationBell from "./components/NotificationBell";
+import ReceivedNoteModal from "./components/ReceivedNoteModal";
 import RenameBoardModal from "./components/RenameBoardModal";
 
 // the notes editor is only downloaded when you open Notes
@@ -25,6 +26,7 @@ export default function Home({ user, onLogout }) {
   const [error, setError] = useState("");
   const [leaving, setLeaving] = useState(false);
   const [reviewingId, setReviewingId] = useState(null); // the invitation being reviewed
+  const [reviewingShareId, setReviewingShareId] = useState(null); // the shared note being reviewed
   const [boardModal, setBoardModal] = useState(null); // "create", "rename", "delete", or null
   const started = useRef(false);
 
@@ -190,6 +192,7 @@ export default function Home({ user, onLogout }) {
                 return openBoard(id);
               }}
               onReview={setReviewingId}
+              onReviewShare={setReviewingShareId}
             />
             <span
               title={user.name}
@@ -260,6 +263,14 @@ export default function Home({ user, onLogout }) {
             navigate("/");
             refreshBoards(boardId);
           }}
+        />
+      )}
+
+      {reviewingShareId && (
+        <ReceivedNoteModal
+          id={reviewingShareId}
+          onClose={() => setReviewingShareId(null)}
+          onViewNotes={() => navigate("/notes")}
         />
       )}
 
