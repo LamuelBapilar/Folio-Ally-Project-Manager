@@ -10,6 +10,7 @@ import {
   isFiltering,
   matchesFilters,
 } from "../../../utils/filters";
+import BoardSummary from "./BoardSummary";
 import Column from "./Column";
 import FilterMenu from "./FilterMenu";
 import ShareModal from "./ShareModal";
@@ -19,28 +20,33 @@ import StoryModal from "./StoryModal";
 const FADE_OUT_MS = 130; // old cards fade out before the list changes
 const ENTER_TOTAL_MS = 650; // long enough for the fade-in and stagger to finish
 
+// accent: the little dot beside each column title
 const COLUMNS = [
   {
     id: "backlog",
     title: "BackLog",
+    accent: "bg-slate-400",
     description:
       "Ideas and tasks that are not scheduled yet. Park things here until you decide to work on them.",
   },
   {
     id: "todo",
     title: "To do",
+    accent: "bg-brand",
     description:
       "Stories that are ready to start. Pick the next one from the top of this column.",
   },
   {
     id: "in_progress",
     title: "In Progress",
+    accent: "bg-medium",
     description:
       "Stories being worked on right now. Try to keep this column short so work gets finished.",
   },
   {
     id: "done",
     title: "Done",
+    accent: "bg-low",
     description:
       "Finished stories. Completed work stays here as a record of what has shipped.",
   },
@@ -306,6 +312,11 @@ export default function Board({ board, user, onNewBoard, onLeave }) {
         </div>
       </div>
 
+      <BoardSummary
+        columns={columns}
+        onShowOverdue={() => changeFilters({ ...filters, due: "overdue" })}
+      />
+
       {/* slides open and closed, so the columns don't jump when chips appear */}
       <div
         className={`grid shrink-0 transition-[grid-template-rows] duration-200 ease-out motion-reduce:transition-none ${
@@ -376,6 +387,7 @@ export default function Board({ board, user, onNewBoard, onLeave }) {
                 id={col.id}
                 title={col.title}
                 description={col.description}
+                accent={col.accent}
                 stories={visible(columns[col.id])}
                 total={columns[col.id].length}
                 dragDisabled={viewFiltered}

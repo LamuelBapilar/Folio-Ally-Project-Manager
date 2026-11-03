@@ -1,7 +1,8 @@
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
-import { CircleAlert, Kanban, LogOut, StickyNote } from "lucide-react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { createBoard, deleteBoard, getBoard, getBoards, updateBoard } from "../../API/table";
+import ProfileMenu from "../../components/ProfileMenu";
+import Sidebar from "../../components/Sidebar";
 import Board from "./components/Board";
 import BoardMenu from "./components/BoardMenu";
 import BoardSwitcher from "./components/BoardSwitcher";
@@ -49,6 +50,15 @@ export default function Home({ user, onLogout }) {
 
     load();
   }, []);
+
+  // the browser tab says where you are
+  useEffect(() => {
+    document.title = inNotes ? "Notes · Folio" : board ? `${board.name} · Folio` : "Folio";
+
+    return () => {
+      document.title = "Folio: kanban and notes";
+    };
+  }, [inNotes, board?.name]);
 
   // fade the current board out while the next one loads, then swap
   async function swapBoard(load) {
@@ -129,44 +139,26 @@ export default function Home({ user, onLogout }) {
 
   const isOwner = board && board.user_id === user.id;
 
-  const navButton = (active) =>
-    `rounded-lg p-1.5 transition-colors focus-visible:outline-2 focus-visible:outline-brand ${
-      active ? "bg-brand text-white" : "text-slate-500 hover:bg-brand-soft"
-    }`;
-
   return (
     <div className="flex h-dvh bg-canvas text-slate-900">
-      <aside className="flex w-14 shrink-0 flex-col items-center gap-2.5 border-r border-brand-soft bg-white py-3">
-        <button
-          type="button"
-          aria-label="Boards"
-          title="Boards"
-          aria-current={!inNotes ? "page" : undefined}
-          onClick={() => navigate("/")}
-          className={navButton(!inNotes)}
-        >
-          <Kanban size={18} />
-        </button>
-        <button
-          type="button"
-          aria-label="Notes"
-          title="Notes"
-          aria-current={inNotes ? "page" : undefined}
-          onClick={() => navigate("/notespage")}
-          className={navButton(inNotes)}
-        >
-          <StickyNote size={18} />
-        </button>
-      </aside>
+      <Sidebar
+        boards={boards}
+        currentBoardId={board?.id}
+        onSelectBoard={(id) => {
+          navigate("/");
+          if (id !== board?.id) openBoard(id);
+        }}
+        onNewBoard={() => {
+          navigate("/");
+          setBoardModal("create");
+        }}
+      />
 
-      <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex shrink-0 items-center justify-between gap-3 px-6 py-4">
+      <div className="dot-grid flex min-w-0 flex-1 flex-col">
+        <header className="flex h-16 shrink-0 items-center justify-between gap-3 px-6">
           <div className="flex min-w-0 items-center gap-3">
-            <span className="shrink-0 text-2xl font-medium text-brand">Folio</span>
-            <span className="h-6 w-px shrink-0 bg-brand-muted/60" />
-
             {inNotes ? (
-              <span className="text-base font-bold">Notes</span>
+              <h1 className="text-lg font-bold">Notes</h1>
             ) : (
               board && (
                 <div className="flex min-w-0 items-center gap-1">
@@ -183,7 +175,6 @@ export default function Home({ user, onLogout }) {
           </div>
 
           <div className="flex shrink-0 items-center gap-3 text-brand">
-            <CircleAlert size={18} />
             <NotificationBell
               // on the Notes page every board notification must switch pages, so no board counts as "current"
               currentBoardId={inNotes ? null : board?.id}
@@ -194,20 +185,7 @@ export default function Home({ user, onLogout }) {
               onReview={setReviewingId}
               onReviewShare={setReviewingShareId}
             />
-            <span
-              title={user.name}
-              className="grid h-7 w-7 place-items-center rounded-full bg-brand-soft text-xs font-semibold"
-            >
-              {user.name?.charAt(0).toUpperCase()}
-            </span>
-            <button
-              onClick={onLogout}
-              aria-label="Log out"
-              title="Log out"
-              className="text-slate-500 hover:text-slate-900"
-            >
-              <LogOut size={16} />
-            </button>
+            <ProfileMenu user={user} onLogout={onLogout} />
           </div>
         </header>
 
@@ -270,7 +248,7 @@ export default function Home({ user, onLogout }) {
         <ReceivedNoteModal
           id={reviewingShareId}
           onClose={() => setReviewingShareId(null)}
-          onViewNotes={() => navigate("/notes")}
+          onViewNotes={() => navigate("/notespage")}
         />
       )}
 

@@ -10,6 +10,14 @@ const PRIORITY = {
   none: { label: "Undefined", style: "bg-slate-100 text-slate-500" },
 };
 
+// the colored edge on the left of a card
+const EDGE = {
+  low: "border-l-low",
+  medium: "border-l-medium",
+  high: "border-l-high",
+  none: "border-l-transparent",
+};
+
 export default function StoryCard({
   story,
   index,
@@ -25,11 +33,20 @@ export default function StoryCard({
   const progress = Math.min(100, Math.max(0, story.progress ?? 0));
   const assignee = story.assignee;
 
+  // finished cards get a green edge, the rest follow their priority
+  const edge = story.status === "done" ? "border-l-low" : EDGE[story.priority ?? "none"] ?? EDGE.none;
+
   // progress only matters while the story is being worked on
   const showProgress = story.status === "in_progress";
 
   // finished stories have no deadline left to show
   const due = story.status === "done" ? null : dueLabel(story.due_date);
+
+  const dueStyle = due?.late
+    ? "bg-red-50 text-red-600"
+    : due?.text === "Today"
+      ? "bg-medium/15 text-amber-700"
+      : "text-slate-500";
 
   return (
     <Draggable
@@ -57,10 +74,10 @@ export default function StoryCard({
                 ? { animationDelay: `${Math.min(index, 8) * 30}ms` }
                 : undefined
             }
-            className={`rounded-xl border bg-white p-3 transition-opacity duration-150 motion-reduce:transition-none ${
+            className={`rounded-xl border border-l-[3px] bg-white p-3 transition-[opacity,transform,box-shadow] duration-150 motion-reduce:transition-none ${edge} ${
               snapshot.isDragging
-                ? "border-brand shadow-xl"
-                : "border-brand-muted/50 shadow-sm"
+                ? "rotate-2 border-brand shadow-xl"
+                : "border-brand-muted/50 shadow-sm hover:-translate-y-0.5 hover:shadow-md motion-reduce:hover:translate-y-0"
             } ${motion.leaving ? "opacity-0" : ""} ${
               motion.entering ? "motion-safe:animate-card-in" : ""
             }`}
@@ -142,9 +159,7 @@ export default function StoryCard({
 
                 {due && (
                   <div
-                    className={`ml-auto flex shrink-0 items-center gap-1 text-[9px] ${
-                      due.late ? "text-red-500" : "text-slate-500"
-                    }`}
+                    className={`ml-auto flex shrink-0 items-center gap-1 rounded px-1.5 py-0.5 text-[9px] font-medium ${dueStyle}`}
                   >
                     <Clock size={10} />
                     {due.text}

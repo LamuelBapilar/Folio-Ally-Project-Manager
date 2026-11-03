@@ -7,6 +7,7 @@ export default function Column({
   id,
   title,
   description,
+  accent = "bg-slate-400",
   stories,
   total = stories.length,
   onAddClick,
@@ -16,12 +17,16 @@ export default function Column({
   dragDisabled,
   motion,
 }) {
+  // stories exist, but the search or filter hides all of them
+  const filteredOut = total > 0 && stories.length === 0;
+
   return (
     <div className="flex h-[75vh] max-h-full min-w-56 flex-1 flex-col rounded-2xl bg-brand-soft p-2.5">
       <div className="mb-1.5 flex shrink-0 items-center justify-between pl-1">
-        <h2 className="text-[13px] font-semibold">
-          {title}{" "}
-          <span className="ml-1 font-normal text-slate-500">
+        <h2 className="flex items-center gap-2 text-[13px] font-semibold">
+          <span aria-hidden="true" className={`h-2 w-2 shrink-0 rounded-full ${accent}`} />
+          {title}
+          <span className="rounded-full bg-white/70 px-1.5 py-0.5 text-[10px] font-medium text-slate-600">
             {stories.length}
             {total !== stories.length && ` / ${total}`}
           </span>
@@ -48,6 +53,24 @@ export default function Column({
               snapshot.isDraggingOver ? "bg-brand/10" : ""
             }`}
           >
+            {stories.length === 0 && !snapshot.isDraggingOver && (
+              <div className="mt-1 grid place-items-center rounded-xl border border-dashed border-brand-muted/70 px-3 py-8 text-center">
+                <p className="text-[11px] text-slate-500">
+                  {filteredOut ? "No matching stories" : "Nothing here yet"}
+                </p>
+
+                {!filteredOut && (
+                  <button
+                    type="button"
+                    onClick={() => onAddClick(id)}
+                    className="mt-1.5 text-[11px] font-semibold text-brand hover:underline"
+                  >
+                    + Add a story
+                  </button>
+                )}
+              </div>
+            )}
+
             {stories.map((story, index) => (
               <StoryCard
                 key={story.id}

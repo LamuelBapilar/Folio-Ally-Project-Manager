@@ -239,4 +239,13 @@
     text-decoration: line-through;
     color: #94a3b8;
   }
+
+  /* a faint dotted canvas behind the boards and notes */
+  .dot-grid {
+    background-image: radial-gradient(
+      color-mix(in srgb, var(--color-brand-muted) 45%, transparent) 1px,
+      transparent 1px
+    );
+    background-size: 18px 18px;
+  }
 }

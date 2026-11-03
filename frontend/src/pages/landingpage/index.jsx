@@ -3,19 +3,29 @@ import { DragDropContext, Draggable, Droppable } from "@hello-pangea/dnd";
 import {
   ArrowRight,
   ArrowUp,
+  Bold,
+  Check,
   ChevronDown,
   Clock,
   GripVertical,
-  Layers,
+  Italic,
+  Link2,
+  List,
   ListChecks,
   RotateCcw,
+  Share2,
   SlidersHorizontal,
   Star,
   StickyNote,
+  Tag,
+  Underline,
+  UserCheck,
   UserPlus,
   Users,
 } from "lucide-react";
 import { Link } from "react-router-dom";
+import Logo from "../../components/Logo";
+import { getCategory } from "../../utils/categories";
 
 // Real feedback goes here. Delete the sample entries and add yours.
 // Each entry: name, handle (optional), quote, rating (1 to 5), avatar (optional image URL)
@@ -23,22 +33,22 @@ import { Link } from "react-router-dom";
 // An empty list hides the whole section and its nav link.
 const TESTIMONIALS = [
   {
-    name: "John Michael",
-    handle: "@johnmichael",
+    name: "Sample name",
+    handle: "@sample_user",
     quote: "Replace this with a real quote from someone who used Folio.",
     rating: 5,
     sample: true,
   },
   {
-    name: "Rebecca lane",
-    handle: "@R_lane",
+    name: "Sample name",
+    handle: "@sample_user",
     quote: "Short and specific works best, like what changed in their day.",
     rating: 5,
     sample: true,
   },
   {
-    name: "Ray Fuentes",
-    handle: "@FuentesRay",
+    name: "Sample name",
+    handle: "@sample_user",
     quote: "Ask for permission before using anyone's name or photo.",
     rating: 4,
     sample: true,
@@ -47,11 +57,14 @@ const TESTIMONIALS = [
 
 const NAV = [
   ["Features", "features"],
+  ["Notes", "notes"],
   ["How it works", "how"],
   ["Try it", "demo"],
-  ...(TESTIMONIALS.length > 0 ? [["Testimonials", "testimonials"]] : []),
+  ...(TESTIMONIALS.length > 0 ? [["Reviews", "testimonials"]] : []),
   ["FAQ", "faq"],
 ];
+
+const SECTION_IDS = ["hero", "features", "notes", "how", "demo", "testimonials", "faq"];
 
 const FEATURES = [
   {
@@ -62,12 +75,22 @@ const FEATURES = [
   {
     icon: ListChecks,
     title: "Progress tracking",
-    text: "Slide a story from 0 to 100% and see it on the card at a glance.",
+    text: "Slide a story from 0 to 100% and watch the bar fill while it's in progress.",
   },
   {
     icon: Clock,
     title: "Priorities and deadlines",
     text: "Mark stories Low, Medium, or High, and see how many days are left.",
+  },
+  {
+    icon: Tag,
+    title: "Categories",
+    text: "Tag stories as bugs, features, design, research, and more, with an icon on every card.",
+  },
+  {
+    icon: UserCheck,
+    title: "Assign stories",
+    text: "Give a story to someone on the board, and filter to see only your own.",
   },
   {
     icon: SlidersHorizontal,
@@ -77,13 +100,27 @@ const FEATURES = [
   {
     icon: Users,
     title: "Share your boards",
-    text: "Invite teammates by email so everyone works on the same board.",
+    text: "Invite teammates by email, and keep a separate board for every project.",
   },
   {
-    icon: Layers,
-    title: "Multiple boards",
-    text: "Keep a separate board for every project and switch between them.",
+    icon: StickyNote,
+    title: "Rich-text notes",
+    text: "Write with headings, lists, checklists, colors, and links. It saves as you type.",
   },
+  {
+    icon: Share2,
+    title: "Share a note",
+    text: "Send a note to someone. They accept it and get their own copy to keep.",
+  },
+];
+
+const NOTE_POINTS = [
+  "Bold, italic, underline, font sizes, colors, and highlights",
+  "Bulleted and numbered lists, checklists, quotes, and links",
+  "Folders to organize, and pins to keep favorites on top",
+  "Search by words, and filter by the date you edited",
+  "Autosave as you type, and download any note as a text file",
+  "Share a copy: they accept it and get their own note",
 ];
 
 const STEPS = [
@@ -92,12 +129,12 @@ const STEPS = [
     text: "Start a board for a project. Folio sets up four columns for you.",
   },
   {
-    title: "Add your stories",
-    text: "Give each story a title, a priority, a due date, and a description.",
+    title: "Add stories and move them",
+    text: "Add a title, a priority, a due date, and a category, then drag stories as work moves forward.",
   },
   {
-    title: "Move and share",
-    text: "Drag stories as work moves forward, and invite your team to join in.",
+    title: "Write it down and share",
+    text: "Keep notes in folders, and invite your team to boards or send them a copy of a note.",
   },
 ];
 
@@ -119,45 +156,49 @@ const FAQS = [
     a: "Yes. They sign up with the same email address you invited, and the invitation is waiting for them when they log in.",
   },
   {
-    q: "Who can see my boards?",
-    a: "Only you and the people you invite. Other accounts can't open your boards.",
+    q: "How do shared notes work?",
+    a: "Share a note by email. The person gets a notification, picks a folder, and saves their own copy. After that the two notes are separate, so edits to one don't change the other.",
   },
   {
-    q: "Will Folio have notes?",
-    a: "Yes, notes are the next feature we're building, right beside your boards.",
+    q: "What can I do in a note?",
+    a: "Format text with bold, italic, underline, sizes, colors, and highlights, add lists, checklists, quotes, and links, organize notes into folders, and download any note as a plain text file.",
+  },
+  {
+    q: "Who can see my boards and notes?",
+    a: "Only you and the people you invite to a board. Notes stay private unless you share a copy.",
   },
 ];
 
 const DEMO_COLUMNS = [
-  { id: "backlog", title: "BackLog" },
-  { id: "todo", title: "To do" },
-  { id: "in_progress", title: "In Progress" },
-  { id: "done", title: "Done" },
+  { id: "backlog", title: "BackLog", accent: "bg-slate-400" },
+  { id: "todo", title: "To do", accent: "bg-brand" },
+  { id: "in_progress", title: "In Progress", accent: "bg-medium" },
+  { id: "done", title: "Done", accent: "bg-low" },
 ];
 
 const DEMO_PRIORITY = {
-  none: { label: "Undefined", style: "bg-slate-100 text-slate-500" },
-  low: { label: "Low", style: "bg-low/15 text-low" },
-  medium: { label: "Medium", style: "bg-medium/20 text-medium" },
-  high: { label: "High", style: "bg-high/15 text-high" },
+  none: { label: "Undefined", style: "bg-slate-100 text-slate-500", edge: "border-l-transparent" },
+  low: { label: "Low", style: "bg-low/15 text-low", edge: "border-l-low" },
+  medium: { label: "Medium", style: "bg-medium/20 text-medium", edge: "border-l-medium" },
+  high: { label: "High", style: "bg-high/15 text-high", edge: "border-l-high" },
 };
 
 const DEMO_STORIES = {
   backlog: [
-    { id: "d1", title: "Plan the launch", priority: "none", progress: 0 },
-    { id: "d2", title: "Write the docs", priority: "low", progress: 10 },
+    { id: "d1", title: "Plan the launch", priority: "none", category: "", progress: 0 },
+    { id: "d2", title: "Write the docs", priority: "low", category: "docs", progress: 10 },
   ],
   todo: [
-    { id: "d3", title: "Design the landing page", priority: "medium", progress: 25 },
-    { id: "d4", title: "Set up analytics", priority: "low", progress: 40 },
+    { id: "d3", title: "Design the landing page", priority: "medium", category: "design", progress: 25 },
+    { id: "d4", title: "Set up analytics", priority: "low", category: "task", progress: 40 },
   ],
   in_progress: [
-    { id: "d5", title: "Build the sign-up flow", priority: "high", progress: 70 },
-    { id: "d6", title: "Review pull requests", priority: "medium", progress: 50 },
+    { id: "d5", title: "Build the sign-up flow", priority: "high", category: "feature", progress: 70 },
+    { id: "d6", title: "Fix the login redirect", priority: "medium", category: "bug", progress: 50 },
   ],
   done: [
-    { id: "d7", title: "Choose the color palette", priority: "low", progress: 100 },
-    { id: "d8", title: "Set up the repo", priority: "high", progress: 100 },
+    { id: "d7", title: "Choose the color palette", priority: "low", category: "design", progress: 100 },
+    { id: "d8", title: "Set up the repo", priority: "high", category: "task", progress: 100 },
   ],
 };
 
@@ -309,7 +350,10 @@ function TabletMock() {
       className="overflow-hidden rounded-[1.75rem] border-[6px] border-slate-900 bg-canvas shadow-2xl"
     >
       <div className="flex items-center justify-between bg-white px-4 py-2.5">
-        <span className="text-xs font-medium text-brand">Folio</span>
+        <span className="flex items-center gap-1.5 text-xs font-medium text-brand">
+          <Logo size={14} />
+          Folio
+        </span>
         <span className="h-1.5 w-16 rounded bg-brand-soft" />
       </div>
 
@@ -338,8 +382,111 @@ function TabletMock() {
   );
 }
 
-function DemoCard({ story, index, done }) {
+// a drawn notes screen: folders on the left, a note with its toolbar on the right
+function NotesMock() {
+  const folders = ["All notes", "Meetings", "Ideas", "Personal"];
+  const tools = [Bold, Italic, Underline, List, ListChecks, Link2];
+  const tasks = [
+    { text: "Review the open pull requests", done: true },
+    { text: "Send the agenda to the team", done: false },
+    { text: "Book the room for Friday", done: false },
+  ];
+
+  return (
+    <div
+      aria-hidden="true"
+      className="flex overflow-hidden rounded-2xl border border-brand-muted/50 bg-white shadow-2xl"
+    >
+      <div className="hidden w-36 shrink-0 space-y-1 border-r border-brand-soft bg-canvas p-3 sm:block">
+        <p className="px-1.5 pb-1 text-[9px] font-semibold uppercase tracking-wider text-slate-500">
+          Folders
+        </p>
+        {folders.map((name, i) => (
+          <div
+            key={name}
+            className={`rounded-lg px-2 py-1.5 text-[11px] ${
+              i === 1 ? "bg-brand-soft font-semibold text-brand" : "text-slate-600"
+            }`}
+          >
+            {name}
+          </div>
+        ))}
+      </div>
+
+      <div className="min-w-0 flex-1">
+        <div className="border-b border-brand-soft px-4 py-3">
+          <p className="text-sm font-bold">Weekly planning</p>
+          <p className="text-[10px] text-slate-500">Meetings · Saved</p>
+        </div>
+
+        <div className="flex items-center gap-1 border-b border-brand-soft px-3 py-1.5 text-slate-500">
+          {tools.map((Icon, i) => (
+            <span
+              key={i}
+              className={`grid h-6 w-6 place-items-center rounded ${
+                i === 0 ? "bg-brand-soft text-brand" : ""
+              }`}
+            >
+              <Icon size={12} />
+            </span>
+          ))}
+        </div>
+
+        <div className="space-y-3 px-4 py-4 text-xs leading-relaxed text-slate-700">
+          <p className="text-base font-bold text-slate-900">Goals for this week</p>
+          <p>
+            Ship the sign-up flow, and look at the{" "}
+            <span className="rounded bg-[#fef08a] px-0.5">open pull requests</span> before
+            Friday.
+          </p>
+
+          <ul className="space-y-1.5">
+            {tasks.map((task) => (
+              <li key={task.text} className="flex items-center gap-2">
+                <span
+                  className={`grid h-3.5 w-3.5 shrink-0 place-items-center rounded border ${
+                    task.done ? "border-brand bg-brand text-white" : "border-brand-muted"
+                  }`}
+                >
+                  {task.done && <Check size={9} />}
+                </span>
+                <span className={task.done ? "text-slate-400 line-through" : ""}>
+                  {task.text}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SharedNoteCard() {
+  return (
+    <div className="flex w-64 items-center gap-3 rounded-2xl border border-dashed border-brand-muted bg-white p-3.5 shadow-xl">
+      <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-brand-soft text-brand">
+        <Share2 size={15} />
+      </span>
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-xs font-semibold">Maria shared a note</p>
+        <p className="truncate text-[11px] text-slate-500">Meeting notes</p>
+      </div>
+      <span className="shrink-0 rounded-md bg-brand px-2 py-1 text-[10px] font-semibold text-white">
+        Save
+      </span>
+    </div>
+  );
+}
+
+function DemoCard({ story, index, column }) {
   const priority = DEMO_PRIORITY[story.priority];
+  const category = getCategory(story.category);
+  const CategoryIcon = category.icon;
+
+  // like the real app: progress only shows while a story is in progress
+  const showProgress = column === "in_progress";
+  const edge = column === "done" ? "border-l-low" : priority.edge;
 
   return (
     <Draggable draggableId={story.id} index={index}>
@@ -351,22 +498,29 @@ function DemoCard({ story, index, done }) {
           className="mb-2 select-none"
         >
           <div
-            className={`rounded-lg border bg-white p-2.5 transition-shadow ${
+            className={`rounded-lg border border-l-[3px] bg-white p-2.5 transition-[transform,box-shadow] ${edge} ${
               snapshot.isDragging
-                ? "border-brand shadow-xl"
-                : "border-brand-muted/40 shadow-sm hover:shadow-md"
+                ? "rotate-2 border-brand shadow-xl"
+                : "border-brand-muted/40 shadow-sm hover:-translate-y-0.5 hover:shadow-md"
             }`}
           >
-            <span
-              className={`rounded px-1.5 py-0.5 text-[9px] font-semibold ${priority.style}`}
-            >
-              {priority.label}
-            </span>
+            <div className="flex items-center gap-1.5">
+              <span
+                title={category.label}
+                className={`grid h-5 w-5 place-items-center rounded ${category.tone}`}
+              >
+                <CategoryIcon size={11} />
+              </span>
+              <span
+                className={`rounded px-1.5 py-0.5 text-[9px] font-semibold ${priority.style}`}
+              >
+                {priority.label}
+              </span>
+            </div>
 
             <p className="mt-1.5 text-xs font-semibold leading-snug">{story.title}</p>
 
-            {/* finished stories show no progress, just like in the app */}
-            {!done && (
+            {showProgress && (
               <div className="mt-2 flex items-center gap-1.5">
                 <div className="h-1 flex-1 overflow-hidden rounded-full bg-brand-soft">
                   <div
@@ -432,7 +586,10 @@ function DemoBoard() {
         <span className="h-2.5 w-2.5 rounded-full bg-high" />
         <span className="h-2.5 w-2.5 rounded-full bg-medium" />
         <span className="h-2.5 w-2.5 rounded-full bg-low" />
-        <span className="ml-3 text-xs font-medium text-brand">Folio</span>
+        <span className="ml-3 flex items-center gap-1.5 text-xs font-medium text-brand">
+          <Logo size={14} />
+          Folio
+        </span>
         <span className="ml-2 h-3 w-px bg-brand-muted/60" />
         <span className="text-xs font-semibold">Product launch</span>
 
@@ -452,9 +609,12 @@ function DemoBoard() {
         <div className="grid grid-cols-2 gap-3 bg-canvas p-4 md:grid-cols-4">
           {DEMO_COLUMNS.map((col) => (
             <div key={col.id} className="rounded-xl bg-brand-soft p-2.5">
-              <p className="mb-2 px-0.5 text-xs font-semibold">
-                {col.title}{" "}
-                <span className="font-normal text-slate-500">{columns[col.id].length}</span>
+              <p className="mb-2 flex items-center gap-2 px-0.5 text-xs font-semibold">
+                <span className={`h-2 w-2 rounded-full ${col.accent}`} />
+                {col.title}
+                <span className="rounded-full bg-white/70 px-1.5 py-0.5 text-[10px] font-medium text-slate-600">
+                  {columns[col.id].length}
+                </span>
               </p>
 
               <Droppable droppableId={col.id}>
@@ -471,7 +631,7 @@ function DemoBoard() {
                         key={story.id}
                         story={story}
                         index={index}
-                        done={col.id === "done"}
+                        column={col.id}
                       />
                     ))}
                     {provided.placeholder}
@@ -664,8 +824,7 @@ export default function Landing() {
 
   // highlight the nav link of the section you are reading
   useEffect(() => {
-    const ids = ["hero", "features", "how", "demo", "testimonials", "faq"];
-    const elements = ids.map((id) => document.getElementById(id)).filter(Boolean);
+    const elements = SECTION_IDS.map((id) => document.getElementById(id)).filter(Boolean);
 
     const observer = new IntersectionObserver(
       (entries) => {
@@ -695,8 +854,9 @@ export default function Landing() {
         }`}
       >
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-3.5">
-          <a href="#top" className="text-2xl font-medium text-brand">
-            Folio
+          <a href="#top" className="flex items-center gap-2.5" aria-label="Folio, back to top">
+            <Logo size={28} />
+            <span className="text-xl font-medium text-brand">Folio</span>
           </a>
 
           <nav aria-label="Sections" className="hidden items-center gap-1 md:flex">
@@ -760,13 +920,13 @@ export default function Landing() {
 
           <div className="motion-safe:animate-board-in">
             <h1 className="text-4xl font-bold leading-[1.05] tracking-tight sm:text-5xl lg:text-6xl">
-              Kanban boards that keep your{" "}
+              Boards and notes that keep your{" "}
               <span className="text-brand">work moving.</span>
             </h1>
 
             <p className="mt-5 max-w-md text-base leading-relaxed text-slate-600">
-              Drag stories across columns, track progress, set deadlines, and share
-              boards with your team. More focused, with less clutter.
+              Plan on a kanban board, write things down in rich-text notes, and share
+              both with the people you work with. All in one place, with less clutter.
             </p>
 
             <div className="mt-8 flex flex-wrap items-center gap-5">
@@ -869,29 +1029,50 @@ export default function Landing() {
                   </SpotlightCard>
                 </Reveal>
               ))}
-
-              <Reveal delay={160}>
-                <div className="h-full rounded-2xl border border-dashed border-brand-muted bg-white/60 p-5 transition-colors hover:bg-white">
-                  <span className="grid h-10 w-10 place-items-center rounded-xl bg-white text-brand">
-                    <StickyNote size={20} />
-                  </span>
-                  <h3 className="mt-4 flex items-center gap-2 text-sm font-bold">
-                    Notes
-                    <span className="rounded-full bg-brand-soft px-2 py-0.5 text-[10px] font-semibold text-brand">
-                      Coming soon
-                    </span>
-                  </h3>
-                  <p className="mt-1.5 text-sm leading-relaxed text-slate-600">
-                    Jot down ideas and meeting notes right beside your boards.
-                  </p>
-                </div>
-              </Reveal>
             </div>
           </div>
         </section>
 
+        {/* notes */}
+        <section id="notes" className="scroll-mt-16 border-t border-brand-soft">
+          <div className="mx-auto grid max-w-6xl items-center gap-14 px-6 py-20 lg:grid-cols-2">
+            <Reveal>
+              <p className="text-xs font-semibold uppercase tracking-wider text-brand">Notes</p>
+              <h2 className="mt-2 text-3xl font-bold tracking-tight sm:text-4xl">
+                Write it down, right beside your boards
+              </h2>
+              <p className="mt-3 max-w-md text-base leading-relaxed text-slate-600">
+                Meeting notes, plans, and quick lists live in folders, and they're ready
+                whenever you need them.
+              </p>
+
+              <ul className="mt-6 space-y-3">
+                {NOTE_POINTS.map((point) => (
+                  <li key={point} className="flex items-start gap-3 text-sm text-slate-700">
+                    <span className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-brand-soft text-brand">
+                      <Check size={12} />
+                    </span>
+                    {point}
+                  </li>
+                ))}
+              </ul>
+            </Reveal>
+
+            <Reveal delay={120}>
+              <div className="relative mx-auto w-full max-w-lg pb-10 lg:max-w-none">
+                <NotesMock />
+                <div className="absolute -bottom-0 -left-2 sm:-left-8">
+                  <div className="motion-safe:animate-float" style={{ animationDuration: "6s" }}>
+                    <SharedNoteCard />
+                  </div>
+                </div>
+              </div>
+            </Reveal>
+          </div>
+        </section>
+
         {/* how it works */}
-        <section id="how" className="scroll-mt-16">
+        <section id="how" className="scroll-mt-16 border-t border-brand-soft bg-canvas">
           <div className="mx-auto max-w-6xl px-6 py-20">
             <Reveal>
               <SectionHeading
@@ -912,7 +1093,7 @@ export default function Landing() {
                   <li key={step.title} className="list-none">
                     <Reveal delay={i * 100}>
                       <div className="text-center">
-                        <span className="relative z-10 mx-auto grid h-10 w-10 place-items-center rounded-full bg-brand text-sm font-bold text-white ring-8 ring-white transition-transform duration-300 hover:scale-110 motion-reduce:transition-none">
+                        <span className="relative z-10 mx-auto grid h-10 w-10 place-items-center rounded-full bg-brand text-sm font-bold text-white ring-8 ring-canvas transition-transform duration-300 hover:scale-110 motion-reduce:transition-none">
                           {i + 1}
                         </span>
                         <h3 className="mt-4 text-base font-bold">{step.title}</h3>
@@ -929,7 +1110,7 @@ export default function Landing() {
         </section>
 
         {/* interactive demo */}
-        <section id="demo" className="scroll-mt-16 border-t border-brand-soft bg-canvas">
+        <section id="demo" className="scroll-mt-16 border-t border-brand-soft">
           <div className="mx-auto max-w-6xl px-6 py-20">
             <Reveal>
               <SectionHeading
@@ -951,7 +1132,10 @@ export default function Landing() {
 
         {/* testimonials: hidden while the list is empty */}
         {TESTIMONIALS.length > 0 && (
-          <section id="testimonials" className="scroll-mt-16">
+          <section
+            id="testimonials"
+            className="scroll-mt-16 border-t border-brand-soft bg-canvas"
+          >
             <div className="mx-auto max-w-6xl px-6 py-20">
               <Reveal>
                 <SectionHeading
@@ -972,7 +1156,7 @@ export default function Landing() {
         )}
 
         {/* faq */}
-        <section id="faq" className="scroll-mt-16 border-t border-brand-soft bg-canvas">
+        <section id="faq" className="scroll-mt-16 border-t border-brand-soft">
           <div className="mx-auto max-w-3xl px-6 py-20">
             <Reveal>
               <SectionHeading eyebrow="FAQ" title="Questions, answered" />
@@ -995,7 +1179,7 @@ export default function Landing() {
         </section>
 
         {/* final call to action */}
-        <section className="px-6 py-20">
+        <section className="px-6 pb-20">
           <Reveal>
             <div className="relative mx-auto max-w-6xl overflow-hidden rounded-3xl bg-brand-dark px-8 py-14 text-center text-white sm:px-12">
               <div
@@ -1011,7 +1195,7 @@ export default function Landing() {
                 Ready to get your work moving?
               </h2>
               <p className="relative mx-auto mt-3 max-w-md text-sm leading-relaxed">
-                Create your first board in a minute. No setup, no clutter.
+                Create your first board and your first note in a minute. No setup, no clutter.
               </p>
 
               <div className="relative mt-8 flex flex-wrap items-center justify-center gap-4">
@@ -1040,8 +1224,11 @@ export default function Landing() {
       <footer className="border-t border-brand-soft">
         <div className="mx-auto flex max-w-6xl flex-col gap-8 px-6 py-10 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <p className="text-2xl font-medium text-brand">Folio</p>
-            <p className="mt-1 text-xs text-slate-500">Your kanban and noting ally</p>
+            <div className="flex items-center gap-2.5">
+              <Logo size={28} />
+              <p className="text-2xl font-medium text-brand">Folio</p>
+            </div>
+            <p className="mt-2 text-xs text-slate-500">Your kanban and noting ally</p>
           </div>
 
           <div className="flex gap-12 text-sm">
