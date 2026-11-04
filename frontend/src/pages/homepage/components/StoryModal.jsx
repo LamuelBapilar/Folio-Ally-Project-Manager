@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { X } from "lucide-react";
+import { Pencil, Plus, X } from "lucide-react";
 import { CATEGORIES } from "../../../utils/categories";
 
 const STATUSES = [
@@ -22,6 +22,7 @@ export default function StoryModal({
   onClose,
 }) {
   const editing = !!story;
+  const HeaderIcon = editing ? Pencil : Plus;
 
   const [form, setForm] = useState({
     title: story?.title ?? "",
@@ -91,11 +92,26 @@ export default function StoryModal({
       <form
         onClick={(e) => e.stopPropagation()}
         onSubmit={handleSubmit}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="story-form-title"
         className="w-full max-w-sm space-y-3 rounded-2xl bg-canvas p-5 shadow-xl"
       >
-        <div className="flex items-center justify-between">
-          <h2 className="text-base font-bold">{editing ? "Edit story" : "Add story"}</h2>
-          <button type="button" onClick={onClose} aria-label="Close" className="text-slate-500 hover:text-slate-900">
+        <div className="flex items-center gap-3">
+          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-brand-soft text-brand">
+            <HeaderIcon size={16} />
+          </span>
+
+          <h2 id="story-form-title" className="min-w-0 flex-1 text-base font-bold leading-snug">
+            {editing ? "Edit story" : "Add story"}
+          </h2>
+
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close"
+            className="shrink-0 self-start text-slate-500 hover:text-slate-900"
+          >
             <X size={14} />
           </button>
         </div>

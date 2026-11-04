@@ -1,16 +1,35 @@
 export function timeAgo(iso) {
-    const seconds = Math.max(0, Math.round((Date.now() - new Date(iso)) / 1000));
-  
-    if (seconds < 60) return "just now";
-  
-    const minutes = Math.floor(seconds / 60);
-    if (minutes < 60) return `${minutes}m ago`;
-  
-    const hours = Math.floor(minutes / 60);
-    if (hours < 24) return `${hours}h ago`;
-  
-    const days = Math.floor(hours / 24);
-    if (days < 7) return `${days}d ago`;
-  
-    return new Date(iso).toLocaleDateString(undefined, { month: "short", day: "numeric" });
-  }
+  const seconds = Math.max(0, Math.round((Date.now() - new Date(iso)) / 1000));
+
+  if (seconds < 60) return "just now";
+
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes}m ago`;
+
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+
+  const days = Math.floor(hours / 24);
+  if (days < 7) return `${days}d ago`;
+
+  return new Date(iso).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+}
+
+// "Nov 2, 2026"
+export function shortDate(iso) {
+  return new Date(iso).toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
+// "November 2026", or null for a missing or invalid date
+export function monthYear(value) {
+  if (!value) return null;
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+
+  return date.toLocaleDateString(undefined, { month: "long", year: "numeric" });
+}

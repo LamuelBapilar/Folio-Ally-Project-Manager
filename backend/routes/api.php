@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\AccountController;
 use App\Http\Controllers\BoardController;
 use App\Http\Controllers\BoardMemberController;
 use App\Http\Controllers\InvitationController;
@@ -73,4 +74,13 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
     Route::get('/note-shares/{share}', [ReceivedShareController::class, 'show']);
     Route::post('/note-shares/{share}/accept', [ReceivedShareController::class, 'accept']);
     Route::post('/note-shares/{share}/decline', [ReceivedShareController::class, 'decline']);
+
+    // the account window
+    Route::patch('/account/profile', [AccountController::class, 'updateProfile']);
+    Route::put('/account/password', [AccountController::class, 'updatePassword'])->middleware('throttle:sensitive');
+    Route::get('/account/sessions', [AccountController::class, 'sessions']);
+    Route::delete('/account/sessions', [AccountController::class, 'revokeOthers']);
+    Route::delete('/account/sessions/{session}', [AccountController::class, 'revoke']);
+    Route::delete('/account', [AccountController::class, 'destroy'])->middleware('throttle:sensitive');
+        
 });

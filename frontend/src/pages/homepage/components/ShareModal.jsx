@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { X } from "lucide-react";
+import { Users, X } from "lucide-react";
 import {
   cancelInvite,
   getMembers,
@@ -108,19 +108,29 @@ export default function ShareModal({ board, user, onClose, onLeave }) {
         className="fixed inset-0 z-50 grid place-items-center bg-slate-900/40 p-4"
       >
         <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="share-board-title"
           onClick={(e) => e.stopPropagation()}
           className="w-full max-w-sm space-y-4 rounded-2xl bg-canvas p-5 shadow-xl"
         >
-          <div className="flex items-start justify-between gap-3">
-            <div className="min-w-0">
-              <h2 className="text-base font-bold">Share board</h2>
+          <div className="flex items-center gap-3">
+            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-brand-soft text-brand">
+              <Users size={16} />
+            </span>
+
+            <div className="min-w-0 flex-1">
+              <h2 id="share-board-title" className="text-base font-bold leading-snug">
+                Share board
+              </h2>
               <p className="truncate text-[11px] text-slate-500">{board.name}</p>
             </div>
+
             <button
               type="button"
               onClick={onClose}
               aria-label="Close"
-              className="text-slate-500 hover:text-slate-900"
+              className="shrink-0 self-start text-slate-500 hover:text-slate-900"
             >
               <X size={14} />
             </button>

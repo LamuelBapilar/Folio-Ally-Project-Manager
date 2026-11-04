@@ -5,6 +5,9 @@ import { register } from "../../API/login";
 import AuthLayout, { SubmitButton } from "../../components/AuthLayout";
 import Field from "../../components/Field";
 import { useCountdown } from "../../hooks/useCountdown";
+import PasswordRequirements from "../../components/PasswordRequirements";
+import { passwordIsValid } from "../../utils/passwordRules";
+
 
 export default function Register({ onRegister }) {
   const [form, setForm] = useState({
@@ -30,6 +33,14 @@ export default function Register({ onRegister }) {
   async function handleSubmit(e) {
     e.preventDefault();
     if (remaining > 0) return;
+
+    if (!passwordIsValid(form.password)) {
+      setErrors({
+        fields: { password: "Your password doesn't meet all the requirements yet." },
+        form: "",
+      });
+      return;
+    }
 
     // the confirm field is only a typo check: Laravel never sees it
     if (form.password !== form.confirm) {
@@ -80,6 +91,7 @@ export default function Register({ onRegister }) {
           id="name"
           autoComplete="name"
           autoFocus
+          maxLength={255}
           placeholder="Your name"
           value={form.name}
           onChange={set("name")}
@@ -99,24 +111,28 @@ export default function Register({ onRegister }) {
           required
         />
 
-        <Field
-          label="Password"
-          id="password"
-          type="password"
-          autoComplete="new-password"
-          placeholder="Create a password"
-          hint="At least 8 characters, with upper and lower case letters and a number."
-          value={form.password}
-          onChange={set("password")}
-          error={errors.fields.password}
-          required
-        />
+        <div>
+          <Field
+            label="Password"
+            id="password"
+            type="password"
+            autoComplete="new-password"
+            maxLength={72}
+            placeholder="Create a password"
+            value={form.password}
+            onChange={set("password")}
+            error={errors.fields.password}
+            required
+          />
+          <PasswordRequirements password={form.password} />
+        </div>
 
         <Field
           label="Confirm password"
           id="confirm"
           type="password"
           autoComplete="new-password"
+          maxLength={72}
           placeholder="Type it again"
           value={form.confirm}
           onChange={set("confirm")}

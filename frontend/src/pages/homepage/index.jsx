@@ -1,6 +1,8 @@
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { createBoard, deleteBoard, getBoard, getBoards, updateBoard } from "../../API/table";
+import AccountModal from "../../components/account/AccountModal";
+import { InlineLoader } from "../../components/Loader";
 import ProfileMenu from "../../components/ProfileMenu";
 import Sidebar from "../../components/Sidebar";
 import Board from "./components/Board";
@@ -18,7 +20,7 @@ const NotesPage = lazy(() => import("../notespage"));
 
 const FADE_OUT_MS = 150;
 
-export default function Home({ user, onLogout }) {
+export default function Home({ user, onLogout, onUserChange }) {
   const navigate = useNavigate();
   const inNotes = useLocation().pathname === "/notespage";
 
@@ -29,6 +31,7 @@ export default function Home({ user, onLogout }) {
   const [reviewingId, setReviewingId] = useState(null); // the invitation being reviewed
   const [reviewingShareId, setReviewingShareId] = useState(null); // the shared note being reviewed
   const [boardModal, setBoardModal] = useState(null); // "create", "rename", "delete", or null
+  const [accountOpen, setAccountOpen] = useState(false);
   const started = useRef(false);
 
   useEffect(() => {
@@ -185,7 +188,11 @@ export default function Home({ user, onLogout }) {
               onReview={setReviewingId}
               onReviewShare={setReviewingShareId}
             />
-            <ProfileMenu user={user} onLogout={onLogout} />
+            <ProfileMenu
+              user={user}
+              onLogout={onLogout}
+              onManage={() => setAccountOpen(true)}
+            />
           </div>
         </header>
 
@@ -204,14 +211,12 @@ export default function Home({ user, onLogout }) {
           )}
 
           {inNotes ? (
-            <Suspense fallback={<p className="text-sm text-slate-500">Loading notes...</p>}>
+            <Suspense fallback={<InlineLoader message="Opening your notes" />}>
               <NotesPage />
             </Suspense>
           ) : (
             <>
-              {!board && !error && (
-                <p className="text-sm text-slate-500">Loading board...</p>
-              )}
+              {!board && !error && <InlineLoader message="Loading your board" />}
 
               {board && (
                 <div
@@ -272,6 +277,15 @@ export default function Home({ user, onLogout }) {
           board={board}
           onConfirm={handleDeleteBoard}
           onClose={() => setBoardModal(null)}
+        />
+      )}
+
+      {accountOpen && (
+        <AccountModal
+          user={user}
+          onUserChange={onUserChange}
+          onLogout={onLogout}
+          onClose={() => setAccountOpen(false)}
         />
       )}
     </div>

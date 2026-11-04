@@ -81,40 +81,48 @@ export default function StoryDetailsModal({ story, onClose, onEdit, onDelete }) 
         aria-modal="true"
         aria-labelledby="story-title"
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-md rounded-2xl bg-canvas p-6 shadow-xl"
+        className="w-full max-w-md rounded-2xl bg-canvas p-5 shadow-xl"
       >
-        <div className="flex items-start justify-between gap-3">
-          <div className="flex flex-wrap items-center gap-1.5">
-            <span
-              className={`flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-semibold ${category.tone}`}
-            >
-              <CategoryIcon size={11} />
-              {category.label}
-            </span>
+        <div className="flex items-start gap-3">
+          <span
+            title={`Category: ${category.label}`}
+            className={`grid h-9 w-9 shrink-0 place-items-center rounded-full ${category.tone}`}
+          >
+            <CategoryIcon size={16} />
+          </span>
 
-            <span
-              className={`rounded px-1.5 py-0.5 text-[10px] font-semibold ${priority.style}`}
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-1.5">
+              <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+                {category.label}
+              </span>
+              <span
+                className={`rounded px-1.5 py-0.5 text-[10px] font-semibold ${priority.style}`}
+              >
+                {priority.label}
+              </span>
+            </div>
+
+            <h2
+              id="story-title"
+              className="mt-0.5 break-words text-base font-bold leading-snug"
             >
-              {priority.label}
-            </span>
+              {story.title}
+            </h2>
           </div>
 
           <button
             type="button"
             onClick={onClose}
             aria-label="Close"
-            className="shrink-0 text-slate-500 hover:text-slate-900"
+            className="mt-0.5 shrink-0 text-slate-500 hover:text-slate-900"
           >
             <X size={14} />
           </button>
         </div>
 
-        <h2 id="story-title" className="mt-3 text-lg font-bold leading-snug break-words">
-          {story.title}
-        </h2>
-
         <p
-          className={`mt-2 max-h-40 overflow-y-auto whitespace-pre-wrap break-words text-xs leading-relaxed ${
+          className={`mt-3 max-h-40 overflow-y-auto whitespace-pre-wrap break-words text-xs leading-relaxed ${
             story.description ? "text-slate-700" : "italic text-slate-400"
           }`}
         >

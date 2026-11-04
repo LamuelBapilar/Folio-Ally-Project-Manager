@@ -1,18 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import { LogOut, Settings } from "lucide-react";
+import { monthYear } from "../utils/time";
 
 const avatarBg = "bg-[linear-gradient(135deg,#8b84ff,#5a52e6)]";
 
-function memberSince(value) {
-  if (!value) return null;
-
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return null;
-
-  return date.toLocaleDateString(undefined, { month: "long", year: "numeric" });
-}
-
-export default function ProfileMenu({ user, onLogout }) {
+export default function ProfileMenu({ user, onLogout, onManage }) {
   const [open, setOpen] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
   const ref = useRef(null);
@@ -20,7 +12,7 @@ export default function ProfileMenu({ user, onLogout }) {
   const cardRef = useRef(null);
 
   const initial = user.name?.charAt(0).toUpperCase() ?? "?";
-  const since = memberSince(user.created_at);
+  const since = monthYear(user.created_at);
 
   useEffect(() => {
     if (!open) return;
@@ -104,15 +96,14 @@ export default function ProfileMenu({ user, onLogout }) {
           <div className="p-1.5">
             <button
               type="button"
-              disabled
-              title="Coming soon"
-              className="flex w-full cursor-not-allowed items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-xs text-slate-400"
+              onClick={() => {
+                setOpen(false);
+                onManage();
+              }}
+              className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-xs font-medium text-slate-700 transition-colors hover:bg-brand-soft focus-visible:outline-2 focus-visible:outline-brand"
             >
               <Settings size={14} className="shrink-0" />
-              <span className="flex-1">Manage account</span>
-              <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[9px] font-semibold text-slate-500">
-                Soon
-              </span>
+              Manage account
             </button>
 
             <button

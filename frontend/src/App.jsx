@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Navigate, Route, Routes, useNavigate } from "react-router-dom";
 import { getUser, logout } from "./API/login";
+import LoadingScreen from "./components/Loader";
 import Landing from "./pages/landingpage";
 import Login from "./pages/loginpage";
 import Register from "./pages/registerpage";
@@ -38,21 +39,15 @@ export default function App() {
   }
 
   if (checking) {
-    return <div className="min-h-screen grid place-items-center">Loading...</div>;
+    return <LoadingScreen message="Signing you in" />;
   }
+
+  const home = <Home user={user} onLogout={handleLogout} onUserChange={setUser} />;
 
   return (
     <Routes>
-      <Route
-        path="/"
-        element={user ? <Home user={user} onLogout={handleLogout} /> : <Landing />}
-      />
-      <Route
-        path="/notespage"
-        element={
-          user ? <Home user={user} onLogout={handleLogout} /> : <Navigate to="/login" replace />
-        }
-      />
+      <Route path="/" element={user ? home : <Landing />} />
+      <Route path="/notespage" element={user ? home : <Navigate to="/login" replace />} />
       <Route
         path="/login"
         element={user ? <Navigate to="/" replace /> : <Login onLogin={setUser} />}

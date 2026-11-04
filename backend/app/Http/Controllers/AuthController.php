@@ -31,7 +31,7 @@ class AuthController extends Controller
 
         return response()->json([
             'user' => $user,
-            'token' => $this->issueToken($user),
+            'token' => $this->issueToken($user, $request),
         ], 201);
     }
 
@@ -75,7 +75,7 @@ class AuthController extends Controller
 
         return response()->json([
             'user' => $user,
-            'token' => $this->issueToken($user),
+            'token' => $this->issueToken($user, $request),
         ]);
     }
 
@@ -86,7 +86,7 @@ class AuthController extends Controller
         return response()->json(['message' => 'Logged out']);
     }
 
-    private function issueToken(User $user): string
+    private function issueToken(User $user, Request $request): string
     {
         // keep only the newest few logins: older devices have to log in again
         $old = $user->tokens()
@@ -99,6 +99,13 @@ class AuthController extends Controller
             $user->tokens()->whereIn('id', $old)->delete();
         }
 
-        return $user->createToken('auth', ['*'], now()->addDays(self::TOKEN_DAYS))->plainTextToken;
+        $token = $user->createToken('auth', ['*'], now()->addDays(self::TOKEN_DAYS));
+
+        // remember which browser this login came from, for the "devices" list
+        $token->accessToken->forceFill([
+            'user_agent' => Str::limit((string) $request->userAgent(), 250, ''),
+        ])->save();
+
+        return $token->plainTextToken;
     }
 }
