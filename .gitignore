@@ -1,2 +1,16 @@
-   node_modules/
-   .env
+# Laravel
+/backend/.env
+/vendor/
+
+# Vite / Node.js
+/node_modules/
+
+# Environment files
+.env
+.env.*
+
+# Keep example environment files
+!.env.example
+
+# Laravel generated files
+/storage/*.key
