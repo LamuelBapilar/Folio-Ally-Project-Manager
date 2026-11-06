@@ -1,27 +1,23 @@
-import { useEffect, useState } from "react";
-import { Pencil, X } from "lucide-react";
+import { useState } from "react";
+import { Pencil } from "lucide-react";
+import Modal, { ModalHeader } from "../../../components/Modal";
 
+/**
+ * Asks for a new board name, then calls `onSave(name)`.
+ * If onSave throws (for example the server says the name is invalid),
+ * the message is shown inside the window and the window stays open.
+ */
 export default function RenameBoardModal({ board, onSave, onClose }) {
   const [name, setName] = useState(board.name);
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
 
-  const close = () => {
-    if (!saving) onClose();
-  };
-
-  useEffect(() => {
-    const onKey = (e) => e.key === "Escape" && !saving && onClose();
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [onClose, saving]);
-
-  async function handleSubmit(e) {
-    e.preventDefault();
+  async function handleSubmit(event) {
+    event.preventDefault();
 
     const next = name.trim();
 
-    // nothing to save
+    // Nothing to save: just close.
     if (!next || next === board.name) {
       onClose();
       return;
@@ -40,36 +36,16 @@ export default function RenameBoardModal({ board, onSave, onClose }) {
   }
 
   return (
-    <div
-      onClick={close}
-      className="fixed inset-0 z-50 grid place-items-center bg-slate-900/40 p-4"
-    >
-      <form
-        onClick={(e) => e.stopPropagation()}
-        onSubmit={handleSubmit}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="rename-title"
-        className="w-full max-w-sm space-y-4 rounded-2xl bg-canvas p-5 shadow-xl"
-      >
-        <div className="flex items-center gap-3">
-          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-brand-soft text-brand">
-            <Pencil size={16} />
-          </span>
-
-          <h2 id="rename-title" className="min-w-0 flex-1 text-base font-bold leading-snug">
-            Rename board
-          </h2>
-
-          <button
-            type="button"
-            onClick={close}
-            aria-label="Close"
-            className="shrink-0 self-start text-slate-500 hover:text-slate-900"
-          >
-            <X size={14} />
-          </button>
-        </div>
+    // dismissible={!saving}: the window can't be closed while the request is running
+    <Modal labelledBy="rename-title" onClose={onClose} dismissible={!saving}>
+      <form onSubmit={handleSubmit} className="space-y-4 p-5">
+        <ModalHeader
+          icon={Pencil}
+          title="Rename board"
+          titleId="rename-title"
+          onClose={onClose}
+          closeDisabled={saving}
+        />
 
         <div>
           <label htmlFor="board-name" className="mb-1 block text-xs font-medium">
@@ -87,7 +63,7 @@ export default function RenameBoardModal({ board, onSave, onClose }) {
             }}
             onFocus={(e) => e.target.select()}
             aria-invalid={error ? "true" : undefined}
-            className={`w-full rounded-lg border bg-white px-2.5 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-brand ${
+            className={`w-full rounded-lg border bg-surface px-2.5 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-brand ${
               error ? "border-red-400" : "border-brand-muted/50"
             }`}
           />
@@ -101,9 +77,9 @@ export default function RenameBoardModal({ board, onSave, onClose }) {
         <div className="flex gap-2.5">
           <button
             type="button"
-            onClick={close}
+            onClick={onClose}
             disabled={saving}
-            className="flex-1 rounded-lg border border-brand-muted/50 bg-white py-1.5 text-xs font-semibold text-slate-700 hover:bg-brand-soft disabled:opacity-50"
+            className="flex-1 rounded-lg border border-brand-muted/50 bg-surface py-1.5 text-xs font-semibold text-slate-700 hover:bg-brand-soft disabled:opacity-50"
           >
             Cancel
           </button>
@@ -115,6 +91,6 @@ export default function RenameBoardModal({ board, onSave, onClose }) {
           </button>
         </div>
       </form>
-    </div>
+    </Modal>
   );
 }

@@ -26,7 +26,7 @@ export default function Column({
         <h2 className="flex items-center gap-2 text-[13px] font-semibold">
           <span aria-hidden="true" className={`h-2 w-2 shrink-0 rounded-full ${accent}`} />
           {title}
-          <span className="rounded-full bg-white/70 px-1.5 py-0.5 text-[10px] font-medium text-slate-600">
+          <span className="rounded-full bg-surface/70 px-1.5 py-0.5 text-[10px] font-medium text-slate-600">
             {stories.length}
             {total !== stories.length && ` / ${total}`}
           </span>
@@ -36,7 +36,7 @@ export default function Column({
           <button
             onClick={() => onAddClick(id)}
             aria-label={`Add story to ${title}`}
-            className="grid h-6 w-6 shrink-0 place-items-center rounded-md text-slate-600 transition-colors hover:bg-white/70 hover:text-brand focus-visible:outline-2 focus-visible:outline-brand"
+            className="grid h-6 w-6 shrink-0 place-items-center rounded-md text-slate-600 transition-colors hover:bg-surface/70 hover:text-brand focus-visible:outline-2 focus-visible:outline-brand"
           >
             <Plus size={16} />
           </button>

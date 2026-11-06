@@ -71,7 +71,7 @@ export default function ShareNoteModal({ note, onClose }) {
   return (
     <div
       onClick={onClose}
-      className="fixed inset-0 z-50 grid place-items-center bg-slate-900/40 p-4"
+      className="fixed inset-0 z-50 grid place-items-center bg-scrim p-4"
     >
       <div
         role="dialog"
@@ -125,7 +125,7 @@ export default function ShareNoteModal({ note, onClose }) {
                 setError("");
               }}
               placeholder="name@example.com"
-              className="min-w-0 flex-1 rounded-lg border border-brand-muted/50 bg-white px-2.5 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-brand"
+              className="min-w-0 flex-1 rounded-lg border border-brand-muted/50 bg-surface px-2.5 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-brand"
             />
             <button
               disabled={sending}

@@ -81,7 +81,7 @@ export default function ReceivedNoteModal({ id, onClose, onViewNotes }) {
   return (
     <div
       onClick={close}
-      className="fixed inset-0 z-50 grid place-items-center bg-slate-900/40 p-4"
+      className="fixed inset-0 z-50 grid place-items-center bg-scrim p-4"
     >
       <div
         role="dialog"
@@ -136,7 +136,7 @@ export default function ReceivedNoteModal({ id, onClose, onViewNotes }) {
               <button
                 type="button"
                 onClick={onClose}
-                className="flex-1 rounded-lg border border-brand-muted/50 bg-white py-2 text-xs font-semibold text-slate-700 hover:bg-brand-soft"
+                className="flex-1 rounded-lg border border-brand-muted/50 bg-surface py-2 text-xs font-semibold text-slate-700 hover:bg-brand-soft"
               >
                 Close
               </button>
@@ -184,7 +184,7 @@ export default function ReceivedNoteModal({ id, onClose, onViewNotes }) {
               </button>
             </div>
 
-            <div className="mt-4 rounded-xl border border-brand-muted/40 bg-white p-3.5">
+            <div className="mt-4 rounded-xl border border-brand-muted/40 bg-surface p-3.5">
               <p className="break-words text-sm font-semibold">{share.title || "Untitled"}</p>
               <p className="mt-1 line-clamp-4 break-words text-xs leading-relaxed text-slate-600">
                 {share.preview || "No additional text"}
@@ -212,7 +212,7 @@ export default function ReceivedNoteModal({ id, onClose, onViewNotes }) {
                     id="share-folder"
                     value={folderId}
                     onChange={(e) => setFolderId(e.target.value)}
-                    className="w-full rounded-lg border border-brand-muted/50 bg-white px-2.5 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-brand"
+                    className="w-full rounded-lg border border-brand-muted/50 bg-surface px-2.5 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-brand"
                   >
                     <option value="">Unfiled</option>
                     {folders.map((folder) => (
@@ -233,7 +233,7 @@ export default function ReceivedNoteModal({ id, onClose, onViewNotes }) {
                     type="button"
                     onClick={() => respond(false)}
                     disabled={busy !== null}
-                    className="flex-1 rounded-lg border border-brand-muted/50 bg-white py-2 text-xs font-semibold text-slate-700 transition-colors hover:bg-brand-soft disabled:opacity-50"
+                    className="flex-1 rounded-lg border border-brand-muted/50 bg-surface py-2 text-xs font-semibold text-slate-700 transition-colors hover:bg-brand-soft disabled:opacity-50"
                   >
                     {busy === "decline" ? "Declining..." : "Decline"}
                   </button>
@@ -258,7 +258,7 @@ export default function ReceivedNoteModal({ id, onClose, onViewNotes }) {
                 <button
                   type="button"
                   onClick={onClose}
-                  className="mt-4 w-full rounded-lg border border-brand-muted/50 bg-white py-2 text-xs font-semibold text-slate-700 hover:bg-brand-soft"
+                  className="mt-4 w-full rounded-lg border border-brand-muted/50 bg-surface py-2 text-xs font-semibold text-slate-700 hover:bg-brand-soft"
                 >
                   Close
                 </button>

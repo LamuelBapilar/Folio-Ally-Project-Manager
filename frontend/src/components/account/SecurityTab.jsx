@@ -19,7 +19,7 @@ const EMPTY = { current: "", next: "", confirm: "" };
 
 function Section({ title, description, children }) {
   return (
-    <section className="rounded-xl border border-brand-muted/40 bg-white p-4">
+    <section className="rounded-xl border border-brand-muted/40 bg-surface p-4">
       <h4 className="text-sm font-bold">{title}</h4>
       {description && <p className="mt-0.5 text-xs text-slate-500">{description}</p>}
       <div className="mt-3">{children}</div>
@@ -164,7 +164,7 @@ function PasswordSection({ onChanged }) {
               type="button"
               onClick={cancel}
               disabled={saving}
-              className="rounded-lg border border-brand-muted/50 bg-white px-4 py-1.5 text-xs font-semibold text-slate-700 hover:bg-brand-soft disabled:opacity-50"
+              className="rounded-lg border border-brand-muted/50 bg-surface px-4 py-1.5 text-xs font-semibold text-slate-700 hover:bg-brand-soft disabled:opacity-50"
             >
               Cancel
             </button>
@@ -317,7 +317,7 @@ export default function SecurityTab({ onLogout }) {
 
       <SessionsSection version={version} />
 
-      <section className="rounded-xl border border-red-200 bg-white p-4">
+      <section className="rounded-xl border border-red-200 bg-surface p-4">
         <h4 className="text-sm font-bold text-red-700">Delete account</h4>
         <p className="mt-0.5 text-xs text-slate-500">
           Permanently delete your account and everything in it.

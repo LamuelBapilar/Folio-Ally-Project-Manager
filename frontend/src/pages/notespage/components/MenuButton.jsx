@@ -64,7 +64,7 @@ export default function MenuButton({
 
       {open && (
         <div
-          className={`absolute top-full z-30 mt-1.5 rounded-xl border border-brand-soft bg-white shadow-lg ${
+          className={`absolute top-full z-30 mt-1.5 rounded-xl border border-brand-soft bg-surface shadow-lg ${
             align === "right" ? "right-0" : "left-0"
           } ${panelClassName}`}
         >

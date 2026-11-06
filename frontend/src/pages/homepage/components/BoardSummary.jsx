@@ -24,7 +24,7 @@ export default function BoardSummary({ columns, onShowOverdue }) {
   const soon = all.filter((s) => ["today", "week"].includes(dueBucket(s))).length;
 
   return (
-    <div className="mb-3 flex shrink-0 flex-wrap items-center gap-x-6 gap-y-2 rounded-xl border border-brand-muted/40 bg-white px-4 py-2.5">
+    <div className="mb-3 flex shrink-0 flex-wrap items-center gap-x-6 gap-y-2 rounded-xl border border-brand-muted/40 bg-surface px-4 py-2.5">
       <div className="flex min-w-48 flex-1 items-center gap-3">
         <div
           role="progressbar"

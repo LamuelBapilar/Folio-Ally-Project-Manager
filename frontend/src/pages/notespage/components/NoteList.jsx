@@ -75,7 +75,7 @@ export default function NoteList({
       </div>
 
       <div className="flex shrink-0 items-center gap-2.5 px-5 pt-3">
-        <label className="flex min-w-0 flex-1 items-center gap-2 rounded-lg border border-brand-muted/50 bg-white px-2.5 py-1.5 text-slate-500 focus-within:ring-2 focus-within:ring-brand">
+        <label className="flex min-w-0 flex-1 items-center gap-2 rounded-lg border border-brand-muted/50 bg-surface px-2.5 py-1.5 text-slate-500 focus-within:ring-2 focus-within:ring-brand">
           <Search size={14} className="shrink-0" />
           <input
             value={query}
@@ -207,7 +207,7 @@ export default function NoteList({
                     aria-pressed={note.is_pinned}
                     aria-label={note.is_pinned ? "Unpin note" : "Pin note"}
                     title={note.is_pinned ? "Unpin note" : "Pin note"}
-                    className={`grid h-6 w-6 place-items-center rounded-md transition-opacity hover:bg-white hover:text-brand focus-visible:opacity-100 focus-visible:outline-2 focus-visible:outline-brand ${
+                    className={`grid h-6 w-6 place-items-center rounded-md transition-opacity hover:bg-surface hover:text-brand focus-visible:opacity-100 focus-visible:outline-2 focus-visible:outline-brand ${
                       note.is_pinned
                         ? "text-brand"
                         : "text-slate-400 opacity-0 group-focus-within:opacity-100 group-hover:opacity-100 [@media(hover:none)]:opacity-100"

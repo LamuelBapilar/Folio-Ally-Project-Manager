@@ -41,7 +41,7 @@ export default function NoteFilterMenu({ value, onChange }) {
       buttonClassName={`flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-medium transition-colors focus-visible:outline-2 focus-visible:outline-brand ${
         count > 0
           ? "border-brand bg-brand-soft text-brand"
-          : "border-brand-muted/50 bg-white text-slate-700 hover:bg-brand-soft"
+          : "border-brand-muted/50 bg-surface text-slate-700 hover:bg-brand-soft"
       }`}
       trigger={
         <>
@@ -88,7 +88,7 @@ export default function NoteFilterMenu({ value, onChange }) {
                   value={value.from}
                   max={value.to || undefined}
                   onChange={(e) => set({ from: e.target.value })}
-                  className="mt-0.5 w-full rounded-md border border-brand-muted/50 bg-white px-1.5 py-1 text-[11px] focus:outline-none focus:ring-2 focus:ring-brand"
+                  className="mt-0.5 w-full rounded-md border border-brand-muted/50 bg-surface px-1.5 py-1 text-[11px] focus:outline-none focus:ring-2 focus:ring-brand"
                 />
               </label>
               <label className="text-[10px] font-medium text-slate-600">
@@ -98,7 +98,7 @@ export default function NoteFilterMenu({ value, onChange }) {
                   value={value.to}
                   min={value.from || undefined}
                   onChange={(e) => set({ to: e.target.value })}
-                  className="mt-0.5 w-full rounded-md border border-brand-muted/50 bg-white px-1.5 py-1 text-[11px] focus:outline-none focus:ring-2 focus:ring-brand"
+                  className="mt-0.5 w-full rounded-md border border-brand-muted/50 bg-surface px-1.5 py-1 text-[11px] focus:outline-none focus:ring-2 focus:ring-brand"
                 />
               </label>
             </div>

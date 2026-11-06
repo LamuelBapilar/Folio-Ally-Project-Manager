@@ -1,17 +1,23 @@
-import { useEffect, useState } from "react";
-import { Pencil, Plus, X } from "lucide-react";
+import { useState } from "react";
+import { Pencil, Plus } from "lucide-react";
+import Modal, { ModalHeader } from "../../../components/Modal";
+import { COLUMNS } from "../../../constants/stories";
 import { CATEGORIES } from "../../../utils/categories";
 
-const STATUSES = [
-  { value: "backlog", label: "BackLog" },
-  { value: "todo", label: "To do" },
-  { value: "in_progress", label: "In Progress" },
-  { value: "done", label: "Done" },
-];
+/**
+ * The "Add story" / "Edit story" window.
+ *
+ * Props:
+ *   story          the story being edited, or undefined to add a new one
+ *   defaultStatus  the column a NEW story starts in
+ *   people         the owner and members of the board (for "Assigned to")
+ *   onSave(data)   saves the story. If it throws, the message is shown in the window.
+ *   onClose        closes the window
+ */
 
+// Shared look of every field, so the form stays consistent.
 const input =
-  "w-full rounded-lg border border-brand-muted/50 bg-white px-2.5 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-brand";
-
+  "w-full rounded-lg border border-brand-muted/50 bg-surface px-2.5 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-brand";
 const label = "mb-1 block text-xs font-medium";
 
 export default function StoryModal({
@@ -24,6 +30,8 @@ export default function StoryModal({
   const editing = !!story;
   const HeaderIcon = editing ? Pencil : Plus;
 
+  // One object holds every field. Values are strings, because that is what inputs give us;
+  // they are converted to the right types when saving.
   const [form, setForm] = useState({
     title: story?.title ?? "",
     description: story?.description ?? "",
@@ -37,9 +45,10 @@ export default function StoryModal({
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
 
+  // Makes a change handler for one field: onChange={set("title")}
   const set = (key) => (e) => setForm((f) => ({ ...f, [key]: e.target.value }));
 
-  // finished stories are always 100%
+  // Finished stories are always 100%, so choosing "Done" moves the slider to the end.
   function setStatus(e) {
     const status = e.target.value;
     setForm((f) => ({
@@ -49,17 +58,11 @@ export default function StoryModal({
     }));
   }
 
-  // keep the current assignee in the list even if the people list has not loaded
+  // Keep the current assignee in the list even if the people list has not loaded yet.
   const options =
     story?.assignee && !people.some((p) => p.id === story.assigned_to)
       ? [...people, story.assignee]
       : people;
-
-  useEffect(() => {
-    const onKey = (e) => e.key === "Escape" && onClose();
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [onClose]);
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -85,59 +88,62 @@ export default function StoryModal({
   }
 
   return (
-    <div
-      onClick={onClose}
-      className="fixed inset-0 z-50 grid place-items-center bg-slate-900/40 p-4"
-    >
-      <form
-        onClick={(e) => e.stopPropagation()}
-        onSubmit={handleSubmit}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="story-form-title"
-        className="w-full max-w-sm space-y-3 rounded-2xl bg-canvas p-5 shadow-xl"
-      >
-        <div className="flex items-center gap-3">
-          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-brand-soft text-brand">
-            <HeaderIcon size={16} />
-          </span>
+    // dismissible={!saving}: the window can't be closed while the request is running.
+    <Modal labelledBy="story-form-title" onClose={onClose} dismissible={!saving}>
+      <form onSubmit={handleSubmit} className="space-y-3 p-5">
+        <ModalHeader
+          icon={HeaderIcon}
+          title={editing ? "Edit story" : "Add story"}
+          titleId="story-form-title"
+          onClose={onClose}
+          closeDisabled={saving}
+        />
 
-          <h2 id="story-form-title" className="min-w-0 flex-1 text-base font-bold leading-snug">
-            {editing ? "Edit story" : "Add story"}
-          </h2>
-
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Close"
-            className="shrink-0 self-start text-slate-500 hover:text-slate-900"
-          >
-            <X size={14} />
-          </button>
+        <div>
+          <label htmlFor="title" className={label}>
+            Title
+          </label>
+          <input
+            id="title"
+            autoFocus
+            required
+            value={form.title}
+            onChange={set("title")}
+            className={input}
+          />
         </div>
 
         <div>
-          <label htmlFor="title" className={label}>Title</label>
-          <input id="title" autoFocus required value={form.title} onChange={set("title")} className={input} />
-        </div>
-
-        <div>
-          <label htmlFor="description" className={label}>Description</label>
-          <textarea id="description" rows={3} value={form.description} onChange={set("description")} className={input} />
+          <label htmlFor="description" className={label}>
+            Description
+          </label>
+          <textarea
+            id="description"
+            rows={3}
+            value={form.description}
+            onChange={set("description")}
+            className={input}
+          />
         </div>
 
         <div className="grid grid-cols-2 gap-2.5">
           <div>
-            <label htmlFor="status" className={label}>Column</label>
+            <label htmlFor="status" className={label}>
+              Column
+            </label>
             <select id="status" value={form.status} onChange={setStatus} className={input}>
-              {STATUSES.map((s) => (
-                <option key={s.value} value={s.value}>{s.label}</option>
+              {COLUMNS.map((column) => (
+                <option key={column.id} value={column.id}>
+                  {column.label}
+                </option>
               ))}
             </select>
           </div>
 
           <div>
-            <label htmlFor="priority" className={label}>Priority</label>
+            <label htmlFor="priority" className={label}>
+              Priority
+            </label>
             <select id="priority" value={form.priority} onChange={set("priority")} className={input}>
               <option value="">Undefined</option>
               <option value="low">Low</option>
@@ -147,6 +153,7 @@ export default function StoryModal({
           </div>
         </div>
 
+        {/* A hint, because changing the column moves the card to the end of that column. */}
         {editing && form.status !== story.status && (
           <p className="-mt-1 text-[10px] text-slate-500">
             The card will move to the end of the new column.
@@ -155,29 +162,45 @@ export default function StoryModal({
 
         <div className="grid grid-cols-2 gap-2.5">
           <div>
-            <label htmlFor="category" className={label}>Category</label>
+            <label htmlFor="category" className={label}>
+              Category
+            </label>
             <select id="category" value={form.category} onChange={set("category")} className={input}>
               <option value="">Undefined</option>
               {CATEGORIES.map((c) => (
-                <option key={c.value} value={c.value}>{c.label}</option>
+                <option key={c.value} value={c.value}>
+                  {c.label}
+                </option>
               ))}
             </select>
           </div>
 
           <div>
-            <label htmlFor="assigned_to" className={label}>Assigned to</label>
-            <select id="assigned_to" value={form.assigned_to} onChange={set("assigned_to")} className={input}>
+            <label htmlFor="assigned_to" className={label}>
+              Assigned to
+            </label>
+            <select
+              id="assigned_to"
+              value={form.assigned_to}
+              onChange={set("assigned_to")}
+              className={input}
+            >
               <option value="">Unassigned</option>
               {options.map((person) => (
-                <option key={person.id} value={person.id}>{person.name}</option>
+                <option key={person.id} value={person.id}>
+                  {person.name}
+                </option>
               ))}
             </select>
           </div>
         </div>
 
+        {/* The progress slider. --fill tells the CSS how much of the track to color. */}
         <div>
           <div className="mb-0.5 flex items-center justify-between">
-            <label htmlFor="progress" className="text-xs font-medium">Progress</label>
+            <label htmlFor="progress" className="text-xs font-medium">
+              Progress
+            </label>
             <span className="text-xs font-semibold text-brand">{form.progress}%</span>
           </div>
           <input
@@ -194,8 +217,16 @@ export default function StoryModal({
         </div>
 
         <div>
-          <label htmlFor="due_date" className={label}>Due date</label>
-          <input id="due_date" type="date" value={form.due_date} onChange={set("due_date")} className={input} />
+          <label htmlFor="due_date" className={label}>
+            Due date
+          </label>
+          <input
+            id="due_date"
+            type="date"
+            value={form.due_date}
+            onChange={set("due_date")}
+            className={input}
+          />
         </div>
 
         {error && <p className="text-xs text-red-600">{error}</p>}
@@ -207,6 +238,6 @@ export default function StoryModal({
           {saving ? "Saving..." : editing ? "Save changes" : "Add story"}
         </button>
       </form>
-    </div>
+    </Modal>
   );
 }

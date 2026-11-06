@@ -51,7 +51,7 @@ export default function FilterMenu({ value, onChange }) {
         className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-medium transition-colors focus-visible:outline-2 focus-visible:outline-brand ${
           count > 0
             ? "border-brand bg-brand-soft text-brand"
-            : "border-brand-muted/50 bg-white text-slate-700 hover:bg-brand-soft"
+            : "border-brand-muted/50 bg-surface text-slate-700 hover:bg-brand-soft"
         }`}
       >
         <SlidersHorizontal size={13} />
@@ -64,7 +64,7 @@ export default function FilterMenu({ value, onChange }) {
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full z-30 mt-1.5 w-52 rounded-xl border border-brand-soft bg-white p-3 shadow-lg">
+        <div className="absolute right-0 top-full z-30 mt-1.5 w-52 rounded-xl border border-brand-soft bg-surface p-3 shadow-lg">
           <fieldset>
             <legend className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-slate-500">
               Priority

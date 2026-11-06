@@ -43,7 +43,7 @@ export default function ConfirmModal({
   return (
     <div
       onClick={close}
-      className="fixed inset-0 z-[60] grid place-items-center bg-slate-900/40 p-4"
+      className="fixed inset-0 z-[60] grid place-items-center bg-scrim p-4"
     >
       <form
         onClick={(e) => e.stopPropagation()}
@@ -99,7 +99,7 @@ export default function ConfirmModal({
             autoFocus={danger}
             onClick={close}
             disabled={busy}
-            className="flex-1 rounded-lg border border-brand-muted/50 bg-white py-1.5 text-xs font-semibold text-slate-700 hover:bg-brand-soft disabled:opacity-50"
+            className="flex-1 rounded-lg border border-brand-muted/50 bg-surface py-1.5 text-xs font-semibold text-slate-700 hover:bg-brand-soft disabled:opacity-50"
           >
             Cancel
           </button>

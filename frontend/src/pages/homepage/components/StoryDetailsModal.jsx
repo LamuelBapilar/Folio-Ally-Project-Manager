@@ -1,23 +1,23 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { CalendarDays, Kanban, ListChecks, Pencil, Trash2, User, X } from "lucide-react";
+import Modal from "../../../components/Modal";
+import { PRIORITIES, STATUS_LABEL } from "../../../constants/stories";
 import { getCategory } from "../../../utils/categories";
 import { dueLabel } from "../../../utils/due";
 import { timeAgo } from "../../../utils/time";
 
-const PRIORITY = {
-  low: { label: "Low", style: "bg-low/15 text-low" },
-  medium: { label: "Medium", style: "bg-medium/20 text-medium" },
-  high: { label: "High", style: "bg-high/15 text-high" },
-  none: { label: "Undefined", style: "bg-slate-100 text-slate-500" },
-};
+/**
+ * The read-only "story details" window you get by clicking a card.
+ * It offers Edit (opens the edit window) and Delete (asks first, right inside this window).
+ *
+ * Props:
+ *   story     the story to show
+ *   onClose   closes the window
+ *   onEdit    called with the story when you press Edit
+ *   onDelete  called with the story when you confirm Delete
+ */
 
-const COLUMN_LABEL = {
-  backlog: "BackLog",
-  todo: "To do",
-  in_progress: "In Progress",
-  done: "Done",
-};
-
+// "2026-11-05" -> "Nov 5, 2026". The "T00:00:00" keeps it in YOUR timezone.
 function formatDate(dateString) {
   return new Date(`${dateString.slice(0, 10)}T00:00:00`).toLocaleDateString(undefined, {
     month: "short",
@@ -26,6 +26,7 @@ function formatDate(dateString) {
   });
 }
 
+// One labeled fact with a small icon, like "Column: To do".
 function Fact({ icon: Icon, label, children }) {
   return (
     <div className="flex items-start gap-2.5">
@@ -33,9 +34,7 @@ function Fact({ icon: Icon, label, children }) {
         <Icon size={14} />
       </span>
       <div className="min-w-0">
-        <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">
-          {label}
-        </p>
+        <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">{label}</p>
         <div className="mt-0.5 text-xs text-slate-800">{children}</div>
       </div>
     </div>
@@ -43,22 +42,16 @@ function Fact({ icon: Icon, label, children }) {
 }
 
 export default function StoryDetailsModal({ story, onClose, onEdit, onDelete }) {
-  const [confirming, setConfirming] = useState(false);
+  const [confirming, setConfirming] = useState(false); // true while "Delete this story?" shows
   const [busy, setBusy] = useState(false);
 
-  useEffect(() => {
-    const onKey = (e) => e.key === "Escape" && onClose();
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [onClose]);
-
-  const priority = PRIORITY[story.priority ?? "none"] ?? PRIORITY.none;
+  const priority = PRIORITIES[story.priority ?? "none"] ?? PRIORITIES.none;
   const category = getCategory(story.category);
   const CategoryIcon = category.icon;
   const finished = story.status === "done";
   const due = story.due_date && !finished ? dueLabel(story.due_date) : null;
 
-  // progress only means something while work is under way, or finished
+  // Progress only means something while work is under way, or once it is finished.
   const showProgress = story.status === "in_progress" || finished;
   const percent = finished ? 100 : Math.min(100, Math.max(0, story.progress ?? 0));
 
@@ -72,17 +65,9 @@ export default function StoryDetailsModal({ story, onClose, onEdit, onDelete }) 
   }
 
   return (
-    <div
-      onClick={onClose}
-      className="fixed inset-0 z-50 grid place-items-center bg-slate-900/40 p-4"
-    >
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="story-title"
-        onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-md rounded-2xl bg-canvas p-5 shadow-xl"
-      >
+    <Modal labelledBy="story-title" onClose={onClose} size="md" dismissible={!busy}>
+      <div className="p-5">
+        {/* Header: the category icon (in its own color), tags, title, and the close button */}
         <div className="flex items-start gap-3">
           <span
             title={`Category: ${category.label}`}
@@ -96,17 +81,12 @@ export default function StoryDetailsModal({ story, onClose, onEdit, onDelete }) 
               <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">
                 {category.label}
               </span>
-              <span
-                className={`rounded px-1.5 py-0.5 text-[10px] font-semibold ${priority.style}`}
-              >
+              <span className={`rounded px-1.5 py-0.5 text-[10px] font-semibold ${priority.style}`}>
                 {priority.label}
               </span>
             </div>
 
-            <h2
-              id="story-title"
-              className="mt-0.5 break-words text-base font-bold leading-snug"
-            >
+            <h2 id="story-title" className="mt-0.5 break-words text-base font-bold leading-snug">
               {story.title}
             </h2>
           </div>
@@ -129,9 +109,10 @@ export default function StoryDetailsModal({ story, onClose, onEdit, onDelete }) 
           {story.description || "No description."}
         </p>
 
-        <div className="mt-5 grid grid-cols-2 gap-x-4 gap-y-4 rounded-xl border border-brand-muted/40 bg-white p-4">
+        {/* The facts grid */}
+        <div className="mt-5 grid grid-cols-2 gap-x-4 gap-y-4 rounded-xl border border-brand-muted/40 bg-surface p-4">
           <Fact icon={Kanban} label="Column">
-            {COLUMN_LABEL[story.status] ?? story.status}
+            {STATUS_LABEL[story.status] ?? story.status}
           </Fact>
 
           <Fact icon={User} label="Assigned to">
@@ -152,10 +133,7 @@ export default function StoryDetailsModal({ story, onClose, onEdit, onDelete }) 
               <>
                 {formatDate(story.due_date)}
                 {due && (
-                  <span className={due.late ? "text-red-500" : "text-slate-500"}>
-                    {" "}
-                    · {due.text}
-                  </span>
+                  <span className={due.late ? "text-red-500" : "text-slate-500"}> · {due.text}</span>
                 )}
               </>
             ) : (
@@ -174,10 +152,7 @@ export default function StoryDetailsModal({ story, onClose, onEdit, onDelete }) 
                   aria-valuemax={100}
                   className="h-1.5 flex-1 overflow-hidden rounded-full bg-brand-soft"
                 >
-                  <span
-                    className="block h-full rounded-full bg-brand"
-                    style={{ width: `${percent}%` }}
-                  />
+                  <span className="block h-full rounded-full bg-brand" style={{ width: `${percent}%` }} />
                 </span>
                 <span className="shrink-0 font-medium">{percent}%</span>
               </span>
@@ -189,6 +164,7 @@ export default function StoryDetailsModal({ story, onClose, onEdit, onDelete }) 
           Created {timeAgo(story.created_at)} · Updated {timeAgo(story.updated_at)}
         </p>
 
+        {/* Footer: either Delete + Edit, or the "Delete this story?" question */}
         <div className="mt-5 flex items-center justify-between gap-3">
           {confirming ? (
             <>
@@ -198,7 +174,7 @@ export default function StoryDetailsModal({ story, onClose, onEdit, onDelete }) 
                   type="button"
                   onClick={() => setConfirming(false)}
                   disabled={busy}
-                  className="rounded-lg border border-brand-muted/50 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-brand-soft disabled:opacity-50"
+                  className="rounded-lg border border-brand-muted/50 bg-surface px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-brand-soft disabled:opacity-50"
                 >
                   Cancel
                 </button>
@@ -235,6 +211,6 @@ export default function StoryDetailsModal({ story, onClose, onEdit, onDelete }) 
           )}
         </div>
       </div>
-    </div>
+    </Modal>
   );
 }

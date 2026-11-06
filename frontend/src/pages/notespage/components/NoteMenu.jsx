@@ -105,9 +105,9 @@ export default function NoteMenu({ onOpen, onDelete, onShare, onDownload }) {
         aria-expanded={open}
         aria-label="Note options"
         title="More options"
-        className={`grid h-6 w-6 place-items-center rounded-md transition-opacity hover:bg-white hover:text-brand focus-visible:opacity-100 focus-visible:outline-2 focus-visible:outline-brand ${
+        className={`grid h-6 w-6 place-items-center rounded-md transition-opacity hover:bg-surface hover:text-brand focus-visible:opacity-100 focus-visible:outline-2 focus-visible:outline-brand ${
           open
-            ? "bg-white text-brand opacity-100"
+            ? "bg-surface text-brand opacity-100"
             : "text-slate-400 opacity-0 group-focus-within:opacity-100 group-hover:opacity-100 [@media(hover:none)]:opacity-100"
         }`}
       >
@@ -124,7 +124,7 @@ export default function NoteMenu({ onOpen, onDelete, onShare, onDownload }) {
             top: place.top,
             transform: place.openUp ? "translateY(-100%)" : undefined,
           }}
-          className="fixed z-40 w-44 rounded-xl border border-brand-soft bg-white p-1 shadow-lg"
+          className="fixed z-40 w-44 rounded-xl border border-brand-soft bg-surface p-1 shadow-lg"
         >
           {items.map((item, i) => {
             const Icon = item.icon;

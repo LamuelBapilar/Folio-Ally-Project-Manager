@@ -71,7 +71,7 @@ export default function InvitationModal({ id, onClose, onAccepted }) {
   return (
     <div
       onClick={onClose}
-      className="fixed inset-0 z-50 grid place-items-center bg-slate-900/40 p-4"
+      className="fixed inset-0 z-50 grid place-items-center bg-scrim p-4"
     >
       <div
         role="dialog"
@@ -145,7 +145,7 @@ export default function InvitationModal({ id, onClose, onAccepted }) {
               </p>
             )}
 
-            <div className="mt-4 flex flex-wrap gap-x-5 gap-y-1.5 rounded-xl border border-brand-muted/40 bg-white px-3.5 py-2.5">
+            <div className="mt-4 flex flex-wrap gap-x-5 gap-y-1.5 rounded-xl border border-brand-muted/40 bg-surface px-3.5 py-2.5">
               <Stat icon={Users}>
                 {invite.board.people_count}{" "}
                 {invite.board.people_count === 1 ? "person" : "people"}
@@ -173,7 +173,7 @@ export default function InvitationModal({ id, onClose, onAccepted }) {
                     type="button"
                     onClick={() => respond(false)}
                     disabled={busy !== null}
-                    className="flex-1 rounded-lg border border-brand-muted/50 bg-white py-2 text-xs font-semibold text-slate-700 transition-colors hover:bg-brand-soft disabled:opacity-50"
+                    className="flex-1 rounded-lg border border-brand-muted/50 bg-surface py-2 text-xs font-semibold text-slate-700 transition-colors hover:bg-brand-soft disabled:opacity-50"
                   >
                     {busy === "decline" ? "Declining..." : "Decline"}
                   </button>
@@ -200,7 +200,7 @@ export default function InvitationModal({ id, onClose, onAccepted }) {
                   <button
                     type="button"
                     onClick={onClose}
-                    className="flex-1 rounded-lg border border-brand-muted/50 bg-white py-2 text-xs font-semibold text-slate-700 hover:bg-brand-soft"
+                    className="flex-1 rounded-lg border border-brand-muted/50 bg-surface py-2 text-xs font-semibold text-slate-700 hover:bg-brand-soft"
                   >
                     Close
                   </button>

@@ -45,7 +45,7 @@ export default function ProfileTab({ user, onUserChange }) {
         <p className="mt-0.5 text-xs text-slate-500">How you appear in Folio.</p>
       </div>
 
-      <div className="flex items-center gap-4 rounded-xl border border-brand-muted/40 bg-white p-4">
+      <div className="flex items-center gap-4 rounded-xl border border-brand-muted/40 bg-surface p-4">
         <span className="grid h-14 w-14 shrink-0 place-items-center rounded-full bg-[linear-gradient(135deg,#8b84ff,#5a52e6)] text-xl font-semibold text-white">
           {user.name?.charAt(0).toUpperCase()}
         </span>

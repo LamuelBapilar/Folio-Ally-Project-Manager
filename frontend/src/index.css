@@ -1,18 +1,37 @@
 @import "tailwindcss";
 
+/* Lets Tailwind's `dark:` prefix follow the `.dark` class instead of the OS setting.
+   The app turns dark by putting `dark` on its outer <div> (see pages/homepage/index.jsx),
+   so this means "an element that has .dark, or anything inside one". */
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
   --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
 
+  /* --- Brand colors --- */
   --color-brand: #6c63ff;
   --color-brand-dark: #5a52e6;
   --color-brand-soft: #e8e6ff;
   --color-brand-muted: #a0a3dc;
   --color-canvas: #f4f4fd;
 
+  /* --- Semantic tokens ---------------------------------------------------
+     Name colors by their JOB, not their shade. App backgrounds must use these
+     (bg-canvas, bg-surface, bg-scrim, bg-tooltip), never bg-white or bg-slate-900,
+     because dark mode swaps their values. The light values live here; the dark
+     values live in the .dark block at the bottom of this file.
+     IMPORTANT: keep this a plain `@theme`. `@theme inline` would bake the values
+     into every class and the dark overrides would silently stop working. */
+  --color-surface: #ffffff; /* cards, inputs, menus, panels */
+  --color-scrim: rgb(15 23 42 / 0.4); /* the dim layer behind a window */
+  --color-tooltip: #1e293b; /* dark tooltip bubbles */
+
+  /* --- Priority colors --- */
   --color-high: #e8978b;
   --color-medium: #d6b95c;
   --color-low: #7fc29b;
 
+  /* --- Animations: use them with the `animate-*` classes --- */
   --animate-card-in: card-in 220ms ease-out backwards;
   --animate-board-in: board-in 250ms ease-out;
   --animate-float: float 5s ease-in-out infinite;
@@ -58,6 +77,11 @@
   }
 }
 
+/* ==========================================================================
+   The progress slider in the story window.
+   The browser draws sliders itself, so every part is styled with its own
+   vendor selector (-webkit- for Chrome/Edge/Safari, -moz- for Firefox).
+   ========================================================================== */
 @layer components {
   .progress-slider {
     -webkit-appearance: none;
@@ -68,7 +92,7 @@
     cursor: pointer;
   }
 
-  /* the track: purple up to --fill, soft lavender after it */
+  /* The track: purple up to --fill (set from React), soft lavender after it. */
   .progress-slider::-webkit-slider-runnable-track {
     height: 6px;
     border-radius: 9999px;
@@ -88,7 +112,7 @@
     );
   }
 
-  /* the thumb: a purple dot with a white ring */
+  /* The thumb: a purple dot with a white ring. */
   .progress-slider::-webkit-slider-thumb {
     -webkit-appearance: none;
     appearance: none;
@@ -111,7 +135,7 @@
     box-shadow: 0 1px 4px rgb(0 0 0 / 0.25);
   }
 
-  /* keyboard focus ring */
+  /* Keyboard focus ring. */
   .progress-slider:focus-visible {
     outline: none;
   }
@@ -123,21 +147,35 @@
   }
 }
 
-/* smooth scrolling for the landing page nav links (skipped if the system asks for less motion) */
+/* Smooth scrolling for the landing page links (skipped when the device asks for less motion). */
 @media (prefers-reduced-motion: no-preference) {
   html {
     scroll-behavior: smooth;
   }
 }
 
-/* rich text in notes */
+/* A faint dotted canvas behind the boards and notes. */
+.dot-grid {
+  background-image: radial-gradient(
+    color-mix(in srgb, var(--color-brand-muted) 45%, transparent) 1px,
+    transparent 1px
+  );
+  background-size: 18px 18px;
+}
+
+/* ==========================================================================
+   Rich text in notes. Everything the note editor renders gets the `note-prose`
+   class (see pages/notes/components/NoteEditor.jsx).
+   Colors come from the --note-* variables below, so dark mode can change them.
+   ========================================================================== */
 @layer components {
   .note-prose {
     font-size: 14px;
     line-height: 1.7;
-    color: #1e293b;
+    color: var(--note-ink);
     word-break: break-word;
   }
+  /* Space between neighbouring blocks. */
   .note-prose > * + * {
     margin-top: 0.6em;
   }
@@ -175,7 +213,7 @@
   .note-prose blockquote {
     border-left: 3px solid var(--color-brand-muted);
     padding-left: 0.9em;
-    color: #475569;
+    color: var(--note-quote);
   }
   .note-prose code {
     background: var(--color-brand-soft);
@@ -196,7 +234,7 @@
     color: inherit;
   }
   .note-prose a {
-    color: var(--color-brand-dark);
+    color: var(--note-link);
     text-decoration: underline;
     cursor: pointer;
   }
@@ -205,12 +243,13 @@
     border-top: 1px solid var(--color-brand-muted);
     margin: 1.2em 0;
   }
+  /* Highlighted text gets slightly rounded corners. */
   .note-prose span[style*="background-color"] {
     border-radius: 3px;
     padding: 0 0.12em;
   }
 
-  /* checklists */
+  /* Checklists: a checkbox and its text, side by side. */
   .note-prose ul[data-type="taskList"] {
     list-style: none;
     padding-left: 0;
@@ -235,91 +274,226 @@
     height: 1em;
     cursor: pointer;
   }
+  /* A ticked item is crossed out and faded. */
   .note-prose ul[data-type="taskList"] li[data-checked="true"] > div {
     text-decoration: line-through;
-    color: #94a3b8;
+    color: var(--note-muted);
   }
+}
 
-  /* a faint dotted canvas behind the boards and notes */
-  .dot-grid {
-    background-image: radial-gradient(
-      color-mix(in srgb, var(--color-brand-muted) 45%, transparent) 1px,
-      transparent 1px
-    );
-    background-size: 18px 18px;
+/* ==========================================================================
+   The animated loading screen (components/Loader.jsx).
+   Each bar of the logo "draws" itself from one edge, then fades, in a loop.
+   ========================================================================== */
+@layer components {
+  .folio-draw-x,
+  .folio-draw-y {
+    transform-box: fill-box; /* scale around the shape itself, not the whole drawing */
+    animation-duration: 1.8s;
+    animation-timing-function: ease-in-out;
+    animation-iteration-count: infinite;
+    animation-fill-mode: both;
   }
+  .folio-draw-x {
+    transform-origin: left center;
+    animation-name: folio-draw-x;
+  }
+  .folio-draw-y {
+    transform-origin: center top;
+    animation-name: folio-draw-y;
+  }
+  .folio-slide {
+    animation: folio-slide 1.4s ease-in-out infinite;
+  }
+}
 
-  /* the animated loading screen */
-  @layer components {
-    .folio-draw-x,
-    .folio-draw-y {
-      transform-box: fill-box;
-      animation-duration: 1.8s;
-      animation-timing-function: ease-in-out;
-      animation-iteration-count: infinite;
-      animation-fill-mode: both;
-    }
-    .folio-draw-x {
-      transform-origin: left center;
-      animation-name: folio-draw-x;
-    }
-    .folio-draw-y {
-      transform-origin: center top;
-      animation-name: folio-draw-y;
-    }
-    .folio-slide {
-      animation: folio-slide 1.4s ease-in-out infinite;
-    }
+@keyframes folio-draw-x {
+  0% {
+    transform: scaleX(0);
+    opacity: 1;
   }
+  30%,
+  78% {
+    transform: scaleX(1);
+    opacity: 1;
+  }
+  92%,
+  100% {
+    transform: scaleX(1);
+    opacity: 0;
+  }
+}
 
-  @keyframes folio-draw-x {
-    0% {
-      transform: scaleX(0);
-      opacity: 1;
-    }
-    30%,
-    78% {
-      transform: scaleX(1);
-      opacity: 1;
-    }
-    92%,
-    100% {
-      transform: scaleX(1);
-      opacity: 0;
-    }
+@keyframes folio-draw-y {
+  0% {
+    transform: scaleY(0);
+    opacity: 1;
   }
+  30%,
+  78% {
+    transform: scaleY(1);
+    opacity: 1;
+  }
+  92%,
+  100% {
+    transform: scaleY(1);
+    opacity: 0;
+  }
+}
 
-  @keyframes folio-draw-y {
-    0% {
-      transform: scaleY(0);
-      opacity: 1;
-    }
-    30%,
-    78% {
-      transform: scaleY(1);
-      opacity: 1;
-    }
-    92%,
-    100% {
-      transform: scaleY(1);
-      opacity: 0;
-    }
+@keyframes folio-slide {
+  0% {
+    transform: translateX(-100%);
   }
+  100% {
+    transform: translateX(250%);
+  }
+}
 
-  @keyframes folio-slide {
-    0% {
-      transform: translateX(-100%);
-    }
-    100% {
-      transform: translateX(250%);
-    }
+@media (prefers-reduced-motion: reduce) {
+  .folio-draw-x,
+  .folio-draw-y,
+  .folio-slide {
+    animation: none;
   }
+}
 
-  @media (prefers-reduced-motion: reduce) {
-    .folio-draw-x,
-    .folio-draw-y,
-    .folio-slide {
-      animation: none;
-    }
+/* ==========================================================================
+   DARK MODE
+   --------------------------------------------------------------------------
+   How it works: Tailwind classes like `bg-surface` or `text-slate-500` read CSS
+   variables (--color-surface, --color-slate-500). The `.dark` class, which the app
+   puts on its outer <div>, redefines those variables for everything inside it.
+   So almost no component needs a `dark:` prefix.
+
+   To retune dark mode, change the values below. To make a NEW color follow the
+   theme, define it in @theme (light value) and override it here (dark value).
+   ========================================================================== */
+
+/* The note editor's text colors live outside @theme, as plain variables. */
+:root {
+  --note-ink: #1e293b;
+  --note-quote: #475569;
+  --note-muted: #94a3b8;
+  --note-link: #5a52e6;
+}
+
+@layer base {
+  .dark {
+    /* Native controls (date pickers, select menus, scrollbars) go dark too. */
+    color-scheme: dark;
+
+    /* Page, surfaces, and the purple family. The purple is lighter here so
+       purple TEXT stays readable on dark surfaces. (Solid purple buttons use a
+       darker fill: see the rules after this block.) */
+    --color-canvas: #101018;
+    --color-surface: #1b1b2d;
+    --color-brand: #7a72ff;
+    --color-brand-dark: #6a62f0;
+    --color-brand-soft: #24214a;
+    --color-brand-muted: #4a4682;
+    --color-scrim: rgb(0 0 0 / 0.6);
+    --color-tooltip: #34345a;
+
+    /* The gray scale is flipped. In light mode slate-900 is the darkest (used for
+       text); here it is the lightest, so `text-slate-900` is still the strongest
+       text. The low numbers become faint white tints for chip backgrounds. */
+    --color-slate-50: rgb(255 255 255 / 0.04);
+    --color-slate-100: rgb(255 255 255 / 0.08);
+    --color-slate-200: rgb(255 255 255 / 0.12);
+    --color-slate-300: #5c5c7a;
+    --color-slate-400: #7d7d99;
+    --color-slate-500: #9b9bb8;
+    --color-slate-600: #b4b4cc;
+    --color-slate-700: #cacade;
+    --color-slate-800: #dcdcec;
+    --color-slate-900: #ececf8;
+
+    /* Pale fills become tinted glass. Red TEXT is handled below: red-600 and red-700
+       are also the fill of delete buttons, so they must keep their dark value. */
+    --color-red-50: rgb(239 68 68 / 0.12);
+    --color-red-100: rgb(239 68 68 / 0.18);
+    --color-red-200: rgb(239 68 68 / 0.35);
+    --color-red-400: #f87171;
+    --color-amber-100: rgb(245 158 11 / 0.18);
+    --color-amber-700: #fcd34d;
+    --color-emerald-100: rgb(16 185 129 / 0.18);
+    --color-emerald-700: #6ee7b7;
+
+    /* Category chips (see utils/categories.js). */
+    --color-rose-100: rgb(244 63 94 / 0.18);
+    --color-rose-600: #fda4af;
+    --color-violet-100: rgb(139 92 246 / 0.2);
+    --color-violet-600: #c4b5fd;
+    --color-sky-100: rgb(14 165 233 / 0.18);
+    --color-sky-600: #7dd3fc;
+    --color-pink-100: rgb(236 72 153 / 0.18);
+    --color-pink-600: #f9a8d4;
+
+    /* Note editor text. */
+    --note-ink: #e4e4f2;
+    --note-quote: #b4b4cc;
+    --note-muted: #7d7d99;
+    --note-link: #a5a0ff;
   }
+}
+
+/* --------------------------------------------------------------------------
+   Overrides for single classes. They are written OUTSIDE any @layer on purpose:
+   Tailwind's utilities live in a layer, and an un-layered rule always beats a
+   layered one, so these win without needing `!important`.
+   -------------------------------------------------------------------------- */
+
+/* Red text must be light on a dark surface. Red BACKGROUNDS (delete buttons) are not
+   touched, so white text on them stays readable. */
+.dark .text-red-600,
+.dark .hover\:text-red-600:hover {
+  color: #f87171;
+}
+.dark .text-red-700 {
+  color: #fca5a5;
+}
+
+/* Solid purple buttons use a darker fill than purple text. White text on #5f57ee has
+   a contrast ratio of about 5:1, and it is still above 4.5:1 on hover. */
+.dark .bg-brand {
+  background-color: #5f57ee;
+}
+.dark .hover\:bg-brand-dark:hover {
+  background-color: #6a62f0;
+}
+
+/* BACKSTOP: inside the app, a leftover `bg-white` still follows the theme instead of
+   showing a white patch. New code should use `bg-surface`, so this only catches mistakes. */
+.dark .bg-white,
+.dark .hover\:bg-white:hover {
+  background-color: var(--color-surface);
+}
+.dark .bg-white\/70,
+.dark .hover\:bg-white\/70:hover {
+  background-color: color-mix(in srgb, var(--color-surface) 70%, transparent);
+}
+
+/* The note editor's text, written as direct rules (not only as variables) so it is
+   light in dark mode even if an older `.note-prose { color: ... }` rule is still above. */
+.dark .note-prose {
+  color: var(--note-ink);
+}
+.dark .note-prose blockquote {
+  color: var(--note-quote);
+}
+.dark .note-prose a {
+  color: var(--note-link);
+}
+.dark .note-prose pre {
+  background: #0d0d16;
+}
+.dark .note-prose ul[data-type="taskList"] li[data-checked="true"] > div {
+  color: var(--note-muted);
+}
+
+/* Highlighted text keeps dark letters so it stays readable on the pale highlight.
+   A text color the writer picked is an inline style, which still wins over this rule. */
+.dark .note-prose span[style*="background-color"] {
+  color: #1e293b;
 }

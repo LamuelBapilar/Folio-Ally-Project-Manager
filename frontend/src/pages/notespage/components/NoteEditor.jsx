@@ -18,6 +18,7 @@ import {
   TriangleAlert,
 } from "lucide-react";
 import { deleteNote, updateNote } from "../../../API/notes";
+import { cleanPastedHtml } from "../../../utils/noteColors";
 import { prepareDocument } from "../../../utils/noteDocument";
 import { downloadTextFile, fileNameFor, noteToText } from "../../../utils/noteText";
 import { timeAgo } from "../../../utils/time";
@@ -25,28 +26,47 @@ import ConfirmModal from "../../homepage/components/ConfirmModal";
 import EditorToolbar from "./EditorToolbar";
 import MenuButton, { MenuItem } from "./MenuButton";
 
+/**
+ * The note editor: title, folder, toolbar, and the rich-text area, with autosave.
+ *
+ * How saving works: every change marks the note "dirty" and starts a timer. One second
+ * after you stop typing, `flush` sends only what changed. `flush` also runs when you press
+ * Back, switch tabs, or share. If a save fails, the unsent changes are kept and Retry sends them.
+ *
+ * Props:
+ *   note           the note to edit (loaded by the notes page)
+ *   folders        your folders, for the "Move to folder" menu
+ *   backLabel      text of the Back button ("All notes", a folder name...)
+ *   onBack         called when you press Back
+ *   onDeleted      called after the note is deleted
+ *   onShare        opens the Share window for this note
+ *   registerFlush  lets the notes page call `flush` before it navigates away
+ */
+
 const SAVE_DELAY_MS = 1000; // saves this long after you stop typing
 
-// created once, so the editor does not rebuild on every render
+// Created ONCE, outside the component, so the editor does not rebuild on every render.
 const extensions = [
   StarterKit.configure({
     heading: { levels: [1, 2, 3] },
     link: { openOnClick: false, autolink: true, defaultProtocol: "https" },
   }),
-  TextStyleKit,
+  TextStyleKit, // font size, text color, highlight
   TextAlign.configure({ types: ["heading", "paragraph"] }),
   TaskList,
   TaskItem.configure({ nested: true }),
 ];
 
-// what the editor accepts: used to check saved notes before opening them
+// What the editor accepts: used to check saved notes before opening them.
 const schema = getSchema(extensions);
 
 const countWords = (text) => (text.trim() ? text.trim().split(/\s+/).length : 0);
 
+// Shared look of the small icon buttons in the header.
 const headerButton =
   "grid h-7 w-7 place-items-center rounded-md transition-colors hover:bg-brand-soft focus-visible:outline-2 focus-visible:outline-brand";
 
+// "Saving...", "Saved", "Unsaved changes", or "Couldn't save" with a Retry button.
 function SaveStatus({ status, onRetry }) {
   return (
     <span aria-live="polite" className="flex items-center gap-1 text-[11px] text-slate-500">
@@ -87,7 +107,8 @@ export default function NoteEditor({
   onShare,
   registerFlush,
 }) {
-  // checked once, when the note is opened
+  // Checked once, when the note is opened. This also drops neutral text colors
+  // (see utils/noteColors.js), so old pasted notes follow the theme.
   const [prepared] = useState(() => prepareDocument(note.content, schema));
   const [showNotice, setShowNotice] = useState(prepared.repaired);
 
@@ -102,17 +123,18 @@ export default function NoteEditor({
   const [actionError, setActionError] = useState("");
   const [confirmingDelete, setConfirmingDelete] = useState(false);
 
-  const titleRef = useRef(note.title);
-  const docRef = useRef(null);
-  const dirtyRef = useRef({ title: false, content: false });
-  const timerRef = useRef(null);
-  const inflightRef = useRef(null);
+  // Refs hold values that change often but should NOT redraw the screen:
+  const titleRef = useRef(note.title); // the latest title text
+  const docRef = useRef(null); // the latest document (null until you type)
+  const dirtyRef = useRef({ title: false, content: false }); // what still needs saving
+  const timerRef = useRef(null); // the autosave timer
+  const inflightRef = useRef(null); // the save that is running right now, if any
 
-  // sends whatever has changed. Returns true when everything is saved.
+  // Sends whatever has changed. Returns true when everything is saved.
   const flush = useCallback(async () => {
     clearTimeout(timerRef.current);
 
-    // wait for a save that is already running, so changes go out in order
+    // Wait for a save that is already running, so changes go out in order.
     while (inflightRef.current) await inflightRef.current;
 
     const dirty = dirtyRef.current;
@@ -137,12 +159,12 @@ export default function NoteEditor({
 
       setMeta((m) => ({ ...m, updated_at: saved.updated_at }));
 
-      // more typing may have happened while this save was running
+      // More typing may have happened while this save was running.
       const more = dirtyRef.current.title || dirtyRef.current.content;
       setStatus(more ? "unsaved" : "saved");
       return true;
     } catch (err) {
-      // keep the unsent changes, so the next attempt (or Retry) sends them
+      // Keep the unsent changes, so the next attempt (or Retry) sends them.
       dirtyRef.current = {
         title: dirtyRef.current.title || "title" in payload,
         content: dirtyRef.current.content || "content" in payload,
@@ -155,6 +177,7 @@ export default function NoteEditor({
     }
   }, [note.id]);
 
+  // Marks "title" or "content" as changed and (re)starts the autosave timer.
   const markDirty = useCallback(
     (part) => {
       dirtyRef.current[part] = true;
@@ -175,6 +198,9 @@ export default function NoteEditor({
         "aria-label": "Note content",
         spellcheck: "true",
       },
+      // Pasted text often carries a fixed text color (black, from Word or WPS) that would
+      // stay black on a dark page. This removes colors that just mean "normal text".
+      transformPastedHTML: cleanPastedHtml,
     },
     onUpdate: ({ editor: e }) => {
       docRef.current = e.getJSON();
@@ -182,6 +208,7 @@ export default function NoteEditor({
     },
   });
 
+  // Values the screen needs from the editor (it doesn't redraw React on its own).
   const { empty, words } = useEditorState({
     editor,
     selector: ({ editor: e }) => ({
@@ -190,7 +217,7 @@ export default function NoteEditor({
     }),
   });
 
-  // let the page save this note before it navigates away, and save once more on the way out
+  // Let the page save this note before it navigates away, and save once more on the way out.
   useEffect(() => {
     registerFlush(flush);
 
@@ -200,7 +227,7 @@ export default function NoteEditor({
     };
   }, [flush, registerFlush]);
 
-  // switching to another tab or window also saves
+  // Switching to another tab or window also saves.
   useEffect(() => {
     const onHide = () => document.visibilityState === "hidden" && flush();
 
@@ -216,6 +243,7 @@ export default function NoteEditor({
     markDirty("title");
   }
 
+  // Enter in the title jumps into the note body.
   function onTitleKeyDown(e) {
     if (e.key === "Enter") {
       e.preventDefault();
@@ -226,13 +254,13 @@ export default function NoteEditor({
   async function togglePin() {
     const next = !meta.is_pinned;
 
-    setMeta((m) => ({ ...m, is_pinned: next }));
+    setMeta((m) => ({ ...m, is_pinned: next })); // show it at once...
     setActionError("");
 
     try {
       await updateNote(note.id, { is_pinned: next });
     } catch (err) {
-      setMeta((m) => ({ ...m, is_pinned: !next }));
+      setMeta((m) => ({ ...m, is_pinned: !next })); // ...and undo if the server said no
       setActionError(err.message);
     }
   }
@@ -248,7 +276,7 @@ export default function NoteEditor({
     }
   }
 
-  // the shared copy is the SAVED note, so everything is saved first
+  // The shared copy is the SAVED note, so everything is saved first.
   async function share() {
     setActionError("");
 
@@ -260,14 +288,14 @@ export default function NoteEditor({
     onShare({ id: note.id, title: titleRef.current });
   }
 
-  // downloads exactly what is on the screen, saved or not
+  // Downloads exactly what is on the screen, saved or not.
   function download() {
     const name = titleRef.current;
     downloadTextFile(fileNameFor(name), noteToText(name, editor.getJSON()));
   }
 
   async function remove() {
-    // nothing left to save for a note that is about to be deleted
+    // Nothing left to save for a note that is about to be deleted.
     clearTimeout(timerRef.current);
     dirtyRef.current = { title: false, content: false };
     while (inflightRef.current) await inflightRef.current;
@@ -280,6 +308,7 @@ export default function NoteEditor({
 
   return (
     <div className="flex h-full min-h-0 flex-col">
+      {/* Top row: Back, folder, "shared by" tag, save status, and the action buttons */}
       <div className="flex shrink-0 flex-wrap items-center gap-2 px-5 pt-4">
         <button
           type="button"
@@ -391,6 +420,7 @@ export default function NoteEditor({
         className="shrink-0 bg-transparent px-5 pb-3 pt-3 text-xl font-bold placeholder:text-slate-300 focus:outline-none"
       />
 
+      {/* Shown when the saved note had a problem and was repaired for display */}
       {showNotice && (
         <div
           role="status"
@@ -425,10 +455,11 @@ export default function NoteEditor({
 
       <EditorToolbar editor={editor} />
 
+      {/* The writing area */}
       <div
         className="relative min-h-0 flex-1 cursor-text overflow-y-auto px-5 py-4"
         onClick={(e) => {
-          // a click on the empty space under the text puts the cursor at the end
+          // A click on the empty space under the text puts the cursor at the end.
           if (e.target === e.currentTarget) editor.chain().focus("end").run();
         }}
       >

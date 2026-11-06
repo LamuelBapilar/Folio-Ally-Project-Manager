@@ -43,7 +43,7 @@ export default function BoardSwitcher({ boards, current, onSelect }) {
       </button>
 
       {open && (
-        <ul className="absolute left-0 top-full z-30 mt-1.5 max-h-56 w-52 min-w-full overflow-auto rounded-xl border border-brand-soft bg-white p-1 shadow-lg">
+        <ul className="absolute left-0 top-full z-30 mt-1.5 max-h-56 w-52 min-w-full overflow-auto rounded-xl border border-brand-soft bg-surface p-1 shadow-lg">
           {boards.map((b) => {
             const active = b.id === current.id;
             return (

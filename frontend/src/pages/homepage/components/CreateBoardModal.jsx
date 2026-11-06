@@ -37,7 +37,7 @@ export default function CreateBoardModal({ onCreate, onClose }) {
   return (
     <div
       onClick={close}
-      className="fixed inset-0 z-50 grid place-items-center bg-slate-900/40 p-4"
+      className="fixed inset-0 z-50 grid place-items-center bg-scrim p-4"
     >
       <form
         onClick={(e) => e.stopPropagation()}
@@ -92,7 +92,7 @@ export default function CreateBoardModal({ onCreate, onClose }) {
             }}
             aria-invalid={error ? "true" : undefined}
             aria-describedby={error ? "new-board-error" : undefined}
-            className={`w-full rounded-lg border bg-white px-2.5 py-1.5 text-xs placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand ${
+            className={`w-full rounded-lg border bg-surface px-2.5 py-1.5 text-xs placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand ${
               error ? "border-red-400" : "border-brand-muted/50"
             }`}
           />
@@ -108,7 +108,7 @@ export default function CreateBoardModal({ onCreate, onClose }) {
             type="button"
             onClick={close}
             disabled={creating}
-            className="flex-1 rounded-lg border border-brand-muted/50 bg-white py-1.5 text-xs font-semibold text-slate-700 hover:bg-brand-soft disabled:opacity-50"
+            className="flex-1 rounded-lg border border-brand-muted/50 bg-surface py-1.5 text-xs font-semibold text-slate-700 hover:bg-brand-soft disabled:opacity-50"
           >
             Cancel
           </button>

@@ -41,7 +41,7 @@ function IconButton({ label, onClick, danger, children }) {
       aria-label={label}
       title={label}
       className={`grid h-5 w-5 place-items-center rounded text-slate-500 transition-colors focus-visible:outline-2 focus-visible:outline-brand ${
-        danger ? "hover:bg-red-50 hover:text-red-600" : "hover:bg-white hover:text-brand"
+        danger ? "hover:bg-red-50 hover:text-red-600" : "hover:bg-surface hover:text-brand"
       }`}
     >
       {children}
@@ -59,7 +59,7 @@ export default function FolderList({
   onDelete,
 }) {
   return (
-    <aside className="flex max-h-48 w-full shrink-0 flex-col rounded-2xl border border-brand-muted/40 bg-white md:max-h-none md:w-56">
+    <aside className="flex max-h-48 w-full shrink-0 flex-col rounded-2xl border border-brand-muted/40 bg-surface md:max-h-none md:w-56">
       <div className="flex items-center justify-between px-3.5 pb-2 pt-3.5">
         <h2 className="text-sm font-bold">Notes</h2>
 

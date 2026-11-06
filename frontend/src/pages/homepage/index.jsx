@@ -1,10 +1,10 @@
-import { lazy, Suspense, useEffect, useRef, useState } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
-import { createBoard, deleteBoard, getBoard, getBoards, updateBoard } from "../../API/table";
+import { lazy, Suspense, useEffect, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import AccountModal from "../../components/account/AccountModal";
 import { InlineLoader } from "../../components/Loader";
 import ProfileMenu from "../../components/ProfileMenu";
 import Sidebar from "../../components/Sidebar";
+import { useTheme } from "../../hooks/useTheme";
 import Board from "./components/Board";
 import BoardMenu from "./components/BoardMenu";
 import BoardSwitcher from "./components/BoardSwitcher";
@@ -14,136 +14,69 @@ import InvitationModal from "./components/InvitationModal";
 import NotificationBell from "./components/NotificationBell";
 import ReceivedNoteModal from "./components/ReceivedNoteModal";
 import RenameBoardModal from "./components/RenameBoardModal";
+import { useBoards } from "./useBoards";
 
-// the notes editor is only downloaded when you open Notes
+// The notes editor is big, so it is only downloaded the first time you open Notes.
 const NotesPage = lazy(() => import("../notespage"));
 
-const FADE_OUT_MS = 150;
-
+/**
+ * The signed-in app shell. It serves BOTH "/" (boards) and "/notespage".
+ *
+ * What lives here:    the layout (sidebar, header, main area) and which window is open.
+ * What lives elsewhere:
+ *   - board data and switching  -> ./useBoards.js
+ *   - the board screen          -> ./components/Board.jsx
+ *   - the notes screen          -> ../notespage/index.jsx
+ *
+ * Props (from App.jsx):
+ *   user          the signed-in person
+ *   onLogout      signs out
+ *   onUserChange  lets the account window update the name everywhere
+ */
 export default function Home({ user, onLogout, onUserChange }) {
   const navigate = useNavigate();
   const inNotes = useLocation().pathname === "/notespage";
 
-  const [boards, setBoards] = useState([]);
-  const [board, setBoard] = useState(null);
-  const [error, setError] = useState("");
-  const [leaving, setLeaving] = useState(false);
-  const [reviewingId, setReviewingId] = useState(null); // the invitation being reviewed
-  const [reviewingShareId, setReviewingShareId] = useState(null); // the shared note being reviewed
-  const [boardModal, setBoardModal] = useState(null); // "create", "rename", "delete", or null
+  // "dark" or "light". Putting the `dark` class on the root <div> below is what turns
+  // dark mode on for everything inside it, including every window. See index.css.
+  const { resolved: theme } = useTheme();
+
+  const {
+    boards,
+    board,
+    error,
+    leaving,
+    dismissError,
+    openBoard,
+    refreshBoards,
+    addBoard,
+    renameBoard,
+    removeBoard,
+  } = useBoards();
+
+  // Which window is open. Each one is null (closed) or holds what it needs.
+  const [reviewingId, setReviewingId] = useState(null); // a board invitation being reviewed
+  const [reviewingShareId, setReviewingShareId] = useState(null); // a shared note being reviewed
+  const [boardModal, setBoardModal] = useState(null); // "create" | "rename" | "delete" | null
   const [accountOpen, setAccountOpen] = useState(false);
-  const started = useRef(false);
 
-  useEffect(() => {
-    // StrictMode runs effects twice in development, and this guard
-    // stops two default boards from being created
-    if (started.current) return;
-    started.current = true;
-
-    async function load() {
-      try {
-        let list = await getBoards();
-        if (list.length === 0) list = [await createBoard("My Board")];
-        setBoards(list);
-        setBoard(await getBoard(list[0].id));
-      } catch (err) {
-        setError(err.message);
-      }
-    }
-
-    load();
-  }, []);
-
-  // the browser tab says where you are
+  // The browser tab shows where you are.
   useEffect(() => {
     document.title = inNotes ? "Notes · Folio" : board ? `${board.name} · Folio` : "Folio";
 
+    // When leaving the app (for example on sign out), put the default title back.
     return () => {
       document.title = "Folio: kanban and notes";
     };
   }, [inNotes, board?.name]);
 
-  // fade the current board out while the next one loads, then swap
-  async function swapBoard(load) {
-    if (leaving) return;
-
-    setError("");
-    setLeaving(true);
-
-    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-
-    try {
-      const [next] = await Promise.all([
-        load(),
-        new Promise((resolve) => setTimeout(resolve, reduced ? 0 : FADE_OUT_MS)),
-      ]);
-      setBoard(next);
-    } catch (err) {
-      if (err.status === 404) {
-        setError("That board is no longer available to you.");
-
-        // the list may be out of date, so reload it
-        try {
-          setBoards(await getBoards());
-        } catch {
-          // keep the old list
-        }
-      } else {
-        setError(err.message);
-      }
-    } finally {
-      setLeaving(false);
-    }
-  }
-
-  function openBoard(id) {
-    return swapBoard(() => getBoard(id));
-  }
-
-  // reload the list of boards and open one of them (after accepting an invite, leaving, or deleting a board)
-  function refreshBoards(openId) {
-    return swapBoard(async () => {
-      let list = await getBoards();
-      if (list.length === 0) list = [await createBoard("My Board")];
-      setBoards(list);
-
-      const target = list.find((b) => b.id === openId) ?? list[0];
-      return getBoard(target.id);
-    });
-  }
-
-  // the modals catch these errors and show them, so there is no try/catch here
-  async function handleCreateBoard(name) {
-    const created = await createBoard(name);
-    setBoards((list) => [created, ...list]);
-
-    // not awaited: the window closes right away while the board fades to the new one
-    swapBoard(() => getBoard(created.id));
-  }
-
-  async function handleRename(name) {
-    const updated = await updateBoard(board.id, { name });
-
-    // the board keeps its stories: only the name changes
-    setBoard((b) => ({ ...b, name: updated.name }));
-    setBoards((list) =>
-      list.map((b) => (b.id === updated.id ? { ...b, name: updated.name } : b))
-    );
-  }
-
-  async function handleDeleteBoard() {
-    await deleteBoard(board.id);
-
-    // everyone's reminders for it were deleted too
-    window.dispatchEvent(new Event("notifications-changed"));
-
-    await refreshBoards();
-  }
-
+  // Only the owner can rename or delete a board.
   const isOwner = board && board.user_id === user.id;
 
   return (
-    <div className="flex h-dvh bg-canvas text-slate-900">
+    <div
+      className={`flex h-dvh bg-canvas text-slate-900 ${theme === "dark" ? "dark" : ""}`}
+    >
       <Sidebar
         boards={boards}
         currentBoardId={board?.id}
@@ -158,6 +91,7 @@ export default function Home({ user, onLogout, onUserChange }) {
       />
 
       <div className="dot-grid flex min-w-0 flex-1 flex-col">
+        {/* Header: the page title on the left, notifications and profile on the right */}
         <header className="flex h-16 shrink-0 items-center justify-between gap-3 px-6">
           <div className="flex min-w-0 items-center gap-3">
             {inNotes ? (
@@ -179,7 +113,8 @@ export default function Home({ user, onLogout, onUserChange }) {
 
           <div className="flex shrink-0 items-center gap-3 text-brand">
             <NotificationBell
-              // on the Notes page every board notification must switch pages, so no board counts as "current"
+              // On the Notes page no board counts as "current", so clicking a board
+              // notification always switches back to Boards.
               currentBoardId={inNotes ? null : board?.id}
               onOpenBoard={(id) => {
                 navigate("/");
@@ -196,15 +131,12 @@ export default function Home({ user, onLogout, onUserChange }) {
           </div>
         </header>
 
+        {/* Main area: either the notes screen or the open board */}
         <main className="flex min-h-0 flex-1 flex-col px-6 pb-5">
           {error && (
             <p className="mb-2 flex items-center gap-2 text-sm text-red-600">
               {error}
-              <button
-                type="button"
-                onClick={() => setError("")}
-                className="text-xs font-semibold underline"
-              >
+              <button type="button" onClick={dismissError} className="text-xs font-semibold underline">
                 Dismiss
               </button>
             </p>
@@ -219,11 +151,13 @@ export default function Home({ user, onLogout, onUserChange }) {
               {!board && !error && <InlineLoader message="Loading your board" />}
 
               {board && (
+                // `leaving` fades the board out while the next one loads.
                 <div
                   className={`min-h-0 flex-1 transition-opacity duration-150 motion-reduce:transition-none ${
                     leaving ? "opacity-0" : ""
                   }`}
                 >
+                  {/* key={board.id} gives each board a fresh state (filters, search...) */}
                   <Board
                     key={board.id}
                     board={board}
@@ -237,6 +171,8 @@ export default function Home({ user, onLogout, onUserChange }) {
           )}
         </main>
       </div>
+
+      {/* ---------- Windows. Each one renders only while it is open. ---------- */}
 
       {reviewingId && (
         <InvitationModal
@@ -258,26 +194,15 @@ export default function Home({ user, onLogout, onUserChange }) {
       )}
 
       {boardModal === "create" && (
-        <CreateBoardModal
-          onCreate={handleCreateBoard}
-          onClose={() => setBoardModal(null)}
-        />
+        <CreateBoardModal onCreate={addBoard} onClose={() => setBoardModal(null)} />
       )}
 
       {boardModal === "rename" && board && (
-        <RenameBoardModal
-          board={board}
-          onSave={handleRename}
-          onClose={() => setBoardModal(null)}
-        />
+        <RenameBoardModal board={board} onSave={renameBoard} onClose={() => setBoardModal(null)} />
       )}
 
       {boardModal === "delete" && board && (
-        <DeleteBoardModal
-          board={board}
-          onConfirm={handleDeleteBoard}
-          onClose={() => setBoardModal(null)}
-        />
+        <DeleteBoardModal board={board} onConfirm={removeBoard} onClose={() => setBoardModal(null)} />
       )}
 
       {accountOpen && (

@@ -3,6 +3,7 @@ import { DragDropContext } from "@hello-pangea/dnd";
 import { Search, UserCheck, Users, X } from "lucide-react";
 import { getMembers } from "../../../API/members";
 import { addStory, deleteStory, reorderStories, updateStory } from "../../../API/story";
+import { COLUMNS } from "../../../constants/stories";
 import {
   DEFAULT_FILTERS,
   DUE_OPTIONS,
@@ -17,49 +18,36 @@ import ShareModal from "./ShareModal";
 import StoryDetailsModal from "./StoryDetailsModal";
 import StoryModal from "./StoryModal";
 
-const FADE_OUT_MS = 130; // old cards fade out before the list changes
-const ENTER_TOTAL_MS = 650; // long enough for the fade-in and stagger to finish
+/**
+ * The board screen: toolbar, summary strip, filter chips, and the columns.
+ *
+ * Data flow: the page gives us `board` (with its stories) ONCE. We copy the stories into
+ * `columns` state and update that copy as you drag, add, edit, and delete. Each change is
+ * also sent to the server (src/API/story.js). If the server says no, we undo the change.
+ *
+ * Props:
+ *   board       the open board, including board.stories
+ *   user        the signed-in person
+ *   onNewBoard  opens the "create board" window (lives in the page)
+ *   onLeave     called after you leave a shared board
+ */
 
-// accent: the little dot beside each column title
-const COLUMNS = [
-  {
-    id: "backlog",
-    title: "BackLog",
-    accent: "bg-slate-400",
-    description:
-      "Ideas and tasks that are not scheduled yet. Park things here until you decide to work on them.",
-  },
-  {
-    id: "todo",
-    title: "To do",
-    accent: "bg-brand",
-    description:
-      "Stories that are ready to start. Pick the next one from the top of this column.",
-  },
-  {
-    id: "in_progress",
-    title: "In Progress",
-    accent: "bg-medium",
-    description:
-      "Stories being worked on right now. Try to keep this column short so work gets finished.",
-  },
-  {
-    id: "done",
-    title: "Done",
-    accent: "bg-low",
-    description:
-      "Finished stories. Completed work stays here as a record of what has shipped.",
-  },
-];
+const FADE_OUT_MS = 130; // old cards fade out for this long before the list changes
+const ENTER_TOTAL_MS = 650; // long enough for the fade-in and its stagger to finish
 
+// Sorts stories into one list per column, in saved order.
+// The lists come from COLUMNS, so adding a column there needs no change here.
 function groupByStatus(stories) {
-  const grouped = { backlog: [], todo: [], in_progress: [], done: [] };
+  const grouped = Object.fromEntries(COLUMNS.map((column) => [column.id, []]));
+
   [...stories]
     .sort((a, b) => a.position - b.position)
     .forEach((story) => grouped[story.status]?.push(story));
+
   return grouped;
 }
 
+// A small removable tag that shows one active filter.
 function Chip({ label, onRemove }) {
   return (
     <span className="flex items-center gap-1 rounded-full bg-brand-soft py-0.5 pl-2.5 pr-1.5 text-[10px] font-semibold text-brand motion-safe:animate-card-in">
@@ -77,27 +65,36 @@ function Chip({ label, onRemove }) {
 }
 
 export default function Board({ board, user, onNewBoard, onLeave }) {
+  // ---------- State ----------
   const [columns, setColumns] = useState(() => groupByStatus(board.stories));
   const [people, setPeople] = useState([]); // the owner and members: who a story can be assigned to
   const [error, setError] = useState("");
   const [search, setSearch] = useState("");
-  const [filters, setFilters] = useState(DEFAULT_FILTERS); // what the menu and chips show right away
-  const [applied, setApplied] = useState(DEFAULT_FILTERS); // what the board shows
+
+  // Filters live in TWO states so the fade transition works:
+  //   `filters` updates instantly (the menu and chips never lag),
+  //   `applied` is what the board really shows, and updates after the fade-out.
+  const [filters, setFilters] = useState(DEFAULT_FILTERS);
+  const [applied, setApplied] = useState(DEFAULT_FILTERS);
   const [motion, setMotion] = useState({ leaving: false, entering: false, key: 0 });
-  // null = closed, { status } = adding to a column, { story } = editing a card
-  const [modal, setModal] = useState(null);
-  const [viewing, setViewing] = useState(null); // id of the story whose details are open
-  const [sharing, setSharing] = useState(false);
   const timers = useRef([]);
 
+  // Which window is open:
+  //   null = none, { status } = adding to a column, { story } = editing a card.
+  const [modal, setModal] = useState(null);
+  const [viewing, setViewing] = useState(null); // id of the story whose details are open
+  const [sharing, setSharing] = useState(false); // the Share window
+
+  // Stop any pending filter-fade timers when the board goes away.
   useEffect(() => () => timers.current.forEach(clearTimeout), []);
 
+  // ---------- Loading the people list (for the "Assigned to" dropdown) ----------
   const loadPeople = useCallback(async () => {
     try {
       const { owner, members } = await getMembers(board.id);
       setPeople([owner, ...members]);
     } catch {
-      // assigning just has no list to pick from; the board still works
+      // Assigning just has no list to pick from. The board still works.
     }
   }, [board.id]);
 
@@ -105,61 +102,67 @@ export default function Board({ board, user, onNewBoard, onLeave }) {
     loadPeople();
   }, [loadPeople]);
 
+  // ---------- Derived values (computed from state on every render) ----------
   const q = search.trim().toLowerCase();
   const filterActive = isFiltering(filters);
   const viewFiltered = !!q || isFiltering(applied);
   const showStatus = filterActive || viewFiltered;
 
-  // always the latest version of the story, so edits show up in the open details
+  // Always the latest copy of the story, so edits show up inside the open details window.
   const viewingStory = viewing
     ? Object.values(columns).flat().find((s) => s.id === viewing)
     : null;
 
+  // ---------- Filtering ----------
+
+  // Changes the filters with a fade: old cards fade out, the list swaps, new cards fade in.
   function changeFilters(next) {
     setFilters(next);
 
     timers.current.forEach(clearTimeout);
     timers.current = [];
 
-    // people who prefer less motion get an instant change
+    // People who prefer less motion get an instant change.
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
       setApplied(next);
       return;
     }
 
-    // 1. fade the current cards out
+    // 1. Fade the current cards out.
     setMotion((m) => ({ ...m, leaving: true, entering: false }));
 
-    // 2. swap the list and fade the new cards in
     timers.current.push(
+      // 2. Swap the list, and fade the new cards in.
       setTimeout(() => {
         setApplied(next);
         setMotion((m) => ({ leaving: false, entering: true, key: m.key + 1 }));
       }, FADE_OUT_MS),
-      // 3. stop animating, so later changes (like a drop) don't fade
+      // 3. Stop animating, so later changes (like a drop) don't fade.
       setTimeout(() => {
         setMotion((m) => ({ ...m, entering: false }));
       }, ENTER_TOTAL_MS)
     );
   }
 
+  // The stories of one column that pass the search box and the applied filters.
   function visible(list) {
-    return list.filter((s) => {
+    return list.filter((story) => {
       if (
         q &&
-        !s.title.toLowerCase().includes(q) &&
-        !(s.description ?? "").toLowerCase().includes(q)
+        !story.title.toLowerCase().includes(q) &&
+        !(story.description ?? "").toLowerCase().includes(q)
       ) {
         return false;
       }
-      return matchesFilters(s, applied, user.id);
+      return matchesFilters(story, applied, user.id);
     });
   }
 
+  // ---------- Drag and drop ----------
   async function handleDragEnd(result) {
     const { source, destination } = result;
 
-    // dropped outside a column, or back in the same spot
+    // Dropped outside a column, or back in the same spot: nothing to do.
     if (!destination) return;
     if (
       source.droppableId === destination.droppableId &&
@@ -168,21 +171,24 @@ export default function Board({ board, user, onNewBoard, onLeave }) {
       return;
     }
 
-    const previous = columns;
+    const previous = columns; // kept so we can undo if the server refuses
     const next = { ...columns };
 
+    // Take the card out of its old position...
     const from = Array.from(next[source.droppableId]);
     const [moved] = from.splice(source.index, 1);
 
     if (source.droppableId === destination.droppableId) {
+      // ...and put it back in the same column at the new position.
       from.splice(destination.index, 0, moved);
       next[source.droppableId] = from;
     } else {
+      // ...or put it in another column. Its status changes with the column.
       const to = Array.from(next[destination.droppableId]);
       to.splice(destination.index, 0, {
         ...moved,
         status: destination.droppableId,
-        // finished stories are always 100%
+        // Finished stories are always 100%.
         ...(destination.droppableId === "done" && { progress: 100 }),
       });
       next[source.droppableId] = from;
@@ -192,7 +198,7 @@ export default function Board({ board, user, onNewBoard, onLeave }) {
     setColumns(next); // update the screen immediately
     setError("");
 
-    // only send the columns that changed
+    // Send only the columns that changed: each story's id, column, and position.
     const affected = new Set([source.droppableId, destination.droppableId]);
     const payload = [...affected].flatMap((status) =>
       next[status].map((story, position) => ({ id: story.id, status, position }))
@@ -206,7 +212,10 @@ export default function Board({ board, user, onNewBoard, onLeave }) {
     }
   }
 
-  // add and edit have no try/catch: the modal catches the error and shows it
+  // ---------- Add, edit, delete ----------
+  // handleAdd and handleEdit do NOT catch errors: the story window catches them
+  // and shows the message inside the window.
+
   async function handleAdd(data) {
     const story = await addStory(board.id, data);
     setColumns((c) => ({ ...c, [story.status]: [...c[story.status], story] }));
@@ -216,17 +225,15 @@ export default function Board({ board, user, onNewBoard, onLeave }) {
     const updated = await updateStory(story.id, data);
 
     setColumns((c) => {
-      // same column: replace the card where it is
+      // Same column: replace the card where it is.
       if (updated.status === story.status) {
         return {
           ...c,
-          [story.status]: c[story.status].map((s) =>
-            s.id === updated.id ? updated : s
-          ),
+          [story.status]: c[story.status].map((s) => (s.id === updated.id ? updated : s)),
         };
       }
 
-      // different column: take it out of the old one, add it to the end of the new one
+      // Different column: take it out of the old one, add it to the end of the new one.
       return {
         ...c,
         [story.status]: c[story.status].filter((s) => s.id !== updated.id),
@@ -247,6 +254,7 @@ export default function Board({ board, user, onNewBoard, onLeave }) {
     }
   }
 
+  // ---------- Small helpers used by the JSX below ----------
   function removePriority(value) {
     changeFilters({
       ...filters,
@@ -261,6 +269,7 @@ export default function Board({ board, user, onNewBoard, onLeave }) {
 
   return (
     <div className="flex h-full flex-col">
+      {/* Toolbar: search on the left, actions on the right */}
       <div className="mb-3 flex shrink-0 flex-wrap items-center justify-between gap-2.5">
         <label className="flex items-center gap-2 text-slate-600">
           <Search size={16} />
@@ -280,7 +289,7 @@ export default function Board({ board, user, onNewBoard, onLeave }) {
             className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-medium transition-colors focus-visible:outline-2 focus-visible:outline-brand ${
               filters.mine
                 ? "border-brand bg-brand-soft text-brand"
-                : "border-brand-muted/50 bg-white text-slate-700 hover:bg-brand-soft"
+                : "border-brand-muted/50 bg-surface text-slate-700 hover:bg-brand-soft"
             }`}
           >
             <UserCheck size={13} />
@@ -291,7 +300,7 @@ export default function Board({ board, user, onNewBoard, onLeave }) {
 
           <button
             onClick={() => setSharing(true)}
-            className="flex items-center gap-1.5 rounded-lg border border-brand-muted/50 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-700 transition-colors hover:bg-brand-soft focus-visible:outline-2 focus-visible:outline-brand"
+            className="flex items-center gap-1.5 rounded-lg border border-brand-muted/50 bg-surface px-2.5 py-1.5 text-xs font-medium text-slate-700 transition-colors hover:bg-brand-soft focus-visible:outline-2 focus-visible:outline-brand"
           >
             <Users size={13} />
             Share
@@ -312,12 +321,13 @@ export default function Board({ board, user, onNewBoard, onLeave }) {
         </div>
       </div>
 
+      {/* The progress strip. Its "Overdue" button applies the overdue filter. */}
       <BoardSummary
         columns={columns}
         onShowOverdue={() => changeFilters({ ...filters, due: "overdue" })}
       />
 
-      {/* slides open and closed, so the columns don't jump when chips appear */}
+      {/* Active filter chips. The row slides open and closed, so the columns don't jump. */}
       <div
         className={`grid shrink-0 transition-[grid-template-rows] duration-200 ease-out motion-reduce:transition-none ${
           showStatus ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
@@ -377,15 +387,16 @@ export default function Board({ board, user, onNewBoard, onLeave }) {
 
       {error && <p className="mb-2 shrink-0 text-xs text-red-600">{error}</p>}
 
+      {/* The columns. DragDropContext listens for drops anywhere inside it. */}
       <DragDropContext onDragEnd={handleDragEnd}>
-        {/* horizontal scroll only: each column scrolls its own cards vertically */}
+        {/* Horizontal scroll only: each column scrolls its own cards vertically. */}
         <div className="min-h-0 flex-1 overflow-x-auto">
           <div className="flex h-full gap-4">
             {COLUMNS.map((col) => (
               <Column
                 key={col.id}
                 id={col.id}
-                title={col.title}
+                title={col.label}
                 description={col.description}
                 accent={col.accent}
                 stories={visible(columns[col.id])}
@@ -402,14 +413,14 @@ export default function Board({ board, user, onNewBoard, onLeave }) {
         </div>
       </DragDropContext>
 
+      {/* ---------- Windows. Each renders only while it is open. ---------- */}
+
       {modal && (
         <StoryModal
           story={modal.story}
           defaultStatus={modal.status}
           people={people}
-          onSave={(data) =>
-            modal.story ? handleEdit(modal.story, data) : handleAdd(data)
-          }
+          onSave={(data) => (modal.story ? handleEdit(modal.story, data) : handleAdd(data))}
           onClose={() => setModal(null)}
         />
       )}
@@ -426,14 +437,7 @@ export default function Board({ board, user, onNewBoard, onLeave }) {
         />
       )}
 
-      {sharing && (
-        <ShareModal
-          board={board}
-          user={user}
-          onClose={closeShare}
-          onLeave={onLeave}
-        />
-      )}
+      {sharing && <ShareModal board={board} user={user} onClose={closeShare} onLeave={onLeave} />}
     </div>
   );
 }

@@ -4,27 +4,34 @@ import { parseError } from "../../API/api";
 import { register } from "../../API/login";
 import AuthLayout, { SubmitButton } from "../../components/AuthLayout";
 import Field from "../../components/Field";
-import { useCountdown } from "../../hooks/useCountdown";
 import PasswordRequirements from "../../components/PasswordRequirements";
+import { useCountdown } from "../../hooks/useCountdown";
 import { passwordIsValid } from "../../utils/passwordRules";
 
-
+/**
+ * The sign-up page. Checks run in two places:
+ *   1. here, in the browser, so mistakes are caught instantly (password rules, matching passwords)
+ *   2. on the server, which is the one that really decides (for example "email already taken")
+ *
+ * Props:
+ *   onRegister(user)  called with the new user after a successful sign-up
+ */
 export default function Register({ onRegister }) {
-  const [form, setForm] = useState({
-    name: "",
-    email: "",
-    password: "",
-    confirm: "",
-  });
+  const [form, setForm] = useState({ name: "", email: "", password: "", confirm: "" });
+
+  // errors.fields holds a message per field ({ email: "..." }); errors.form holds a general one.
   const [errors, setErrors] = useState({ fields: {}, form: "" });
   const [loading, setLoading] = useState(false);
+
+  // If the server says "too many attempts", this counts the wait down.
   const { remaining, start } = useCountdown();
 
-  // the "too many attempts" box goes away on its own when the wait is over
+  // The "too many attempts" box goes away on its own when the wait is over.
   const limitOver = !!errors.retryAfter && remaining === 0;
   const formError = limitOver ? "" : errors.form;
 
-  // update one field, and clear its error as soon as the person starts fixing it
+  // Makes a change handler for one field, and clears that field's error as soon as
+  // the person starts fixing it.
   const set = (key) => (e) => {
     setForm((f) => ({ ...f, [key]: e.target.value }));
     setErrors((prev) => ({ ...prev, fields: { ...prev.fields, [key]: undefined } }));
@@ -32,7 +39,7 @@ export default function Register({ onRegister }) {
 
   async function handleSubmit(e) {
     e.preventDefault();
-    if (remaining > 0) return;
+    if (remaining > 0) return; // still waiting after "too many attempts"
 
     if (!passwordIsValid(form.password)) {
       setErrors({
@@ -42,7 +49,7 @@ export default function Register({ onRegister }) {
       return;
     }
 
-    // the confirm field is only a typo check: Laravel never sees it
+    // The confirm field is only a typo check: the server never sees it.
     if (form.password !== form.confirm) {
       setErrors({ fields: { confirm: "Passwords do not match." }, form: "" });
       return;
@@ -111,6 +118,7 @@ export default function Register({ onRegister }) {
           required
         />
 
+        {/* The checklist sits right under the password field and ticks as you type. */}
         <div>
           <Field
             label="Password"

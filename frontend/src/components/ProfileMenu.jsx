@@ -2,11 +2,27 @@ import { useEffect, useRef, useState } from "react";
 import { LogOut, Settings } from "lucide-react";
 import { monthYear } from "../utils/time";
 
+/**
+ * The round avatar in the header, and the card that opens when you click it.
+ *
+ * Props:
+ *   user       the signed-in person ({ name, email, created_at })
+ *   onLogout   signs out (returns a promise)
+ *   onManage   opens the "Manage account" window
+ *
+ * Colors: the card uses `bg-surface`, the themed card color, so it turns dark in dark mode.
+ * Never use `bg-white` for a background inside the app (see README, "Colors and dark mode").
+ */
+
+// The avatar's purple gradient. The same one is used on the big avatar inside the card.
 const avatarBg = "bg-[linear-gradient(135deg,#8b84ff,#5a52e6)]";
 
 export default function ProfileMenu({ user, onLogout, onManage }) {
   const [open, setOpen] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
+
+  // Refs let us talk to real page elements: to tell a click inside the menu from one outside,
+  // to give focus back to the avatar, and to move focus into the card when it opens.
   const ref = useRef(null);
   const buttonRef = useRef(null);
   const cardRef = useRef(null);
@@ -14,6 +30,7 @@ export default function ProfileMenu({ user, onLogout, onManage }) {
   const initial = user.name?.charAt(0).toUpperCase() ?? "?";
   const since = monthYear(user.created_at);
 
+  // While the card is open: close it on an outside click or Escape.
   useEffect(() => {
     if (!open) return;
 
@@ -23,16 +40,17 @@ export default function ProfileMenu({ user, onLogout, onManage }) {
     function onKey(e) {
       if (e.key === "Escape") {
         setOpen(false);
-        buttonRef.current?.focus();
+        buttonRef.current?.focus(); // hand focus back to the avatar
       }
     }
 
     document.addEventListener("mousedown", onPointerDown);
     document.addEventListener("keydown", onKey);
 
-    // the card takes the focus, so Tab moves through its buttons
+    // Move keyboard focus into the card, so Tab walks through its buttons.
     cardRef.current?.focus();
 
+    // Cleanup: remove the listeners when the card closes.
     return () => {
       document.removeEventListener("mousedown", onPointerDown);
       document.removeEventListener("keydown", onKey);
@@ -51,6 +69,7 @@ export default function ProfileMenu({ user, onLogout, onManage }) {
 
   return (
     <div ref={ref} className="relative">
+      {/* The avatar button */}
       <button
         ref={buttonRef}
         type="button"
@@ -72,8 +91,9 @@ export default function ProfileMenu({ user, onLogout, onManage }) {
           tabIndex={-1}
           role="dialog"
           aria-label="Account"
-          className="absolute right-0 top-full z-30 mt-2 w-72 overflow-hidden rounded-2xl border border-brand-soft bg-white text-slate-900 shadow-xl focus:outline-none"
+          className="absolute right-0 top-full z-30 mt-2 w-72 overflow-hidden rounded-2xl border border-brand-soft bg-surface text-slate-900 shadow-xl focus:outline-none"
         >
+          {/* Who you are */}
           <div className="flex items-center gap-3 bg-brand-soft/60 px-4 py-4">
             <span
               className={`grid h-11 w-11 shrink-0 place-items-center rounded-full text-base font-semibold text-white ${avatarBg}`}
@@ -93,6 +113,7 @@ export default function ProfileMenu({ user, onLogout, onManage }) {
             </p>
           )}
 
+          {/* Actions */}
           <div className="p-1.5">
             <button
               type="button"

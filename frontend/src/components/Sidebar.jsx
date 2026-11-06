@@ -101,13 +101,13 @@ export default function Sidebar({ boards, currentBoardId, onSelectBoard, onNewBo
           tabIndex={-1}
           aria-label="Close menu"
           onClick={() => setExpanded(false)}
-          className="fixed inset-0 z-30 cursor-default bg-slate-900/30 md:hidden"
+          className="fixed inset-0 z-30 cursor-default bg-scrim md:hidden"
         />
       )}
 
       <aside
         aria-label="Main navigation"
-        className={`absolute inset-y-0 left-0 z-40 flex flex-col overflow-hidden border-r border-brand-soft bg-white transition-[width,box-shadow] duration-200 motion-reduce:transition-none ${
+        className={`absolute inset-y-0 left-0 z-40 flex flex-col overflow-hidden border-r border-brand-soft bg-surface transition-[width,box-shadow] duration-200 motion-reduce:transition-none ${
           expanded ? "w-56 shadow-2xl md:shadow-none" : "w-14"
         }`}
       >

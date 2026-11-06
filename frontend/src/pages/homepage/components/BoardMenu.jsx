@@ -44,7 +44,7 @@ export default function BoardMenu({ onRename, onDelete }) {
       {open && (
         <div
           role="menu"
-          className="absolute left-0 top-full z-30 mt-1.5 w-44 rounded-xl border border-brand-soft bg-white p-1 shadow-lg"
+          className="absolute left-0 top-full z-30 mt-1.5 w-44 rounded-xl border border-brand-soft bg-surface p-1 shadow-lg"
         >
           <button
             type="button"

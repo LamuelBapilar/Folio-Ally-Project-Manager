@@ -180,7 +180,7 @@ function LinkForm({ editor, href, hasLink, close }) {
           setError("");
         }}
         placeholder="example.com"
-        className="w-full rounded-lg border border-brand-muted/50 bg-white px-2.5 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-brand"
+        className="w-full rounded-lg border border-brand-muted/50 bg-surface px-2.5 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-brand"
       />
       {error && <p className="text-[11px] text-red-600">{error}</p>}
 
@@ -255,7 +255,7 @@ export default function EditorToolbar({ editor }) {
     <div
       role="toolbar"
       aria-label="Text formatting"
-      className="flex shrink-0 flex-wrap items-center gap-0.5 border-y border-brand-soft bg-white px-3 py-1.5"
+      className="flex shrink-0 flex-wrap items-center gap-0.5 border-y border-brand-soft bg-surface px-3 py-1.5"
     >
       <ToolButton label="Undo" disabled={!s.canUndo} onClick={() => chain().undo().run()}>
         <Undo2 size={14} />
