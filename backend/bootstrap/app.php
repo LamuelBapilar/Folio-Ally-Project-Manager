@@ -16,10 +16,11 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // Render sits in front of the app: trust it, so the real visitor address and https are seen
+        $middleware->trustProxies(at: '*');
+    
         $middleware->api(append: [SecurityHeaders::class]);
-
-        // Spaces and tabs inside a rich-text note are part of the text, so Laravel
-        // must not trim them, or turn a piece that is only a space into null.
+    
         $middleware->trimStrings(except: [
             fn (Request $request) => $request->is('api/notes/*'),
         ]);
