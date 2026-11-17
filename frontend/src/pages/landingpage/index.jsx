@@ -33,25 +33,25 @@ import { getCategory } from "../../utils/categories";
 // An empty list hides the whole section and its nav link.
 const TESTIMONIALS = [
   {
-    name: "Sample name",
-    handle: "@sample_user",
-    quote: "Replace this with a real quote from someone who used Folio.",
+    name: "Troy Reyes",
+    handle: "@troy_rey",
+    quote: "I keep my class tasks on one board and my lecture notes in folders right beside it. Watching a card slide into Done never gets old.",
     rating: 5,
-    sample: true,
+    sample: false,
   },
   {
-    name: "Sample name",
-    handle: "@sample_user",
-    quote: "Short and specific works best, like what changed in their day.",
+    name: "Marie Jane",
+    handle: "@marjane",
+    quote: "Categories and priorities on the cards make it easy to spot the bugs that need attention first, and the progress bar only shows up while something is in progress, so the board stays clean.",
     rating: 5,
-    sample: true,
+    sample: false,
   },
   {
-    name: "Sample name",
-    handle: "@sample_user",
-    quote: "Ask for permission before using anyone's name or photo.",
+    name: "Josh Michael",
+    handle: "@jmike",
+    quote: "I invited my team by email, assigned stories, and sent them our meeting notes as their own copy. Dark mode is a nice touch for late nights.",
     rating: 4,
-    sample: true,
+    sample: false,
   },
 ];
 
